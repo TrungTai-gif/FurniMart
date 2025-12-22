@@ -224,7 +224,7 @@ BEGIN
         ) VALUES (
             NEWID(),
             'admin@furnimart.com',
-            '$2a$12$xpWkUVC27vOqpd6CtuqYAeJigHV7FYWVrAP9ASJPLOj1cr5Q8Fdde', -- bcrypt hash của "Admin@123" (12 rounds)
+            '$2a$12$y9z6excriS6YDwUmvJYZPO6THuKIavteR3uj483cxY1oXTNmy3xaq', -- bcrypt hash của "Admin@123" (12 rounds) - đã verify
             'System Administrator',
             NULL,
             @AdminRoleId,
