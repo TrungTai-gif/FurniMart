@@ -1,0 +1,37 @@
+{
+  "name": "furnimart-payment-after-sale-service",
+  "version": "1.0.0",
+  "description": "Payment & After-Sale Service for FurniMart - Payment Processing and After-Sale Services",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "furnimart",
+    "payment",
+    "after-sale",
+    "warranty",
+    "refund"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "mssql": "^10.0.1",
+    "dotenv": "^16.3.1",
+    "express-validator": "^7.0.1",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "express-rate-limit": "^7.1.5",
+    "uuid": "^9.0.1",
+    "axios": "^1.6.2",
+    "crypto": "^1.0.1",
+    "moment": "^2.29.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
+
