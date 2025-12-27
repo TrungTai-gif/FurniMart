@@ -41,3 +41,44 @@ class Database {
     }
     return this.pool;
   }
+  /**
+   * Thực thi query
+   */
+  async query(queryString, params = {}) {
+    try {
+      const pool = this.getPool();
+      const request = pool.request();
+
+      // Add parameters
+      Object.keys(params).forEach(key => {
+        request.input(key, params[key]);
+      });
+
+      const result = await request.query(queryString);
+      return result;
+    } catch (error) {
+      console.error('❌ Lỗi thực thi query:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Đóng kết nối
+   */
+  async close() {
+    try {
+      if (this.pool) {
+        await this.pool.close();
+        this.pool = null;
+        console.log('✅ Đã đóng kết nối database');
+      }
+    } catch (error) {
+      console.error('❌ Lỗi đóng kết nối:', error);
+      throw error;
+    }
+  }
+}
+
+// Export singleton instance
+const database = new Database();
+module.exports = database;
