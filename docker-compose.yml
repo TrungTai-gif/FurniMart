@@ -2,23 +2,47 @@ services:
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: furnimart-sqlserver
+    platform: linux/amd64
     environment:
-      - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=FurniMart@2024
-      - MSSQL_PID=Developer
+      ACCEPT_EULA: Y
+      MSSQL_SA_PASSWORD: 123456aA@$
+      MSSQL_PID: Developer
     ports:
       - "1433:1433"
     volumes:
       - sqlserver_data:/var/opt/mssql
       - ./database/sqlserver:/docker-entrypoint-initdb.d
     healthcheck:
-      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "FurniMart@2024" -Q "SELECT 1" -C || exit 1
+      test:
+        - "CMD-SHELL"
+        - |
+          /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "123456aA@\$" -Q "SELECT 1" -b || exit 1
       interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 60s
+      timeout: 10s
+      retries: 30
+      start_period: 30s
     networks:
       - furnimart-network
+    restart: unless-stopped
+
+  db-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    platform: linux/amd64
+    container_name: furnimart-db-init
+    environment:
+      SQL_SERVER_HOST: sqlserver
+      SQL_SERVER_PORT: 1433
+      SQL_SERVER_USER: sa
+      SQL_SERVER_PASSWORD: 123456aA@$
+    volumes:
+      - ./database/sqlserver:/scripts
+    command: ["/bin/bash", "/scripts/init.sh"]
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - furnimart-network
+    restart: "no"
 
   identity-service:
     build:
@@ -28,23 +52,23 @@ services:
     ports:
       - "5001:5001"
     environment:
-      - NODE_ENV=production
-      - PORT=5001
-      - SQL_SERVER_HOST=sqlserver
-      - SQL_SERVER_PORT=1433
-      - SQL_SERVER_USER=sa
-      - SQL_SERVER_PASSWORD=FurniMart@2024
-      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
-      - JWT_REFRESH_SECRET=your-super-secret-refresh-jwt-key-change-in-production
-      - JWT_ACCESS_EXPIRY=15m
-      - JWT_REFRESH_EXPIRY=7d
-      - CORS_ORIGIN=*
+      NODE_ENV: production
+      PORT: 5001
+      SQL_SERVER_HOST: sqlserver
+      SQL_SERVER_PORT: 1433
+      SQL_SERVER_USER: sa
+      SQL_SERVER_PASSWORD: 123456aA@$
+      JWT_SECRET: FurniMartSuperSecretJwtKey2025!@@abc123def456ghi789jkl000mno
+      JWT_REFRESH_SECRET: FurniMartRefreshSecretKey2025$%^xyz987uvw654rst321qwe
+      JWT_ACCESS_EXPIRY: 15m
+      JWT_REFRESH_EXPIRY: 7d
+      CORS_ORIGIN: "*"
     depends_on:
       sqlserver:
         condition: service_healthy
-    restart: unless-stopped
     networks:
       - furnimart-network
+    restart: unless-stopped
 
   catalog-service:
     build:
@@ -54,19 +78,45 @@ services:
     ports:
       - "5002:5002"
     environment:
-      - NODE_ENV=production
-      - PORT=5002
-      - SQL_SERVER_HOST=sqlserver
-      - SQL_SERVER_PORT=1433
-      - SQL_SERVER_USER=sa
-      - SQL_SERVER_PASSWORD=FurniMart@2024
-      - CORS_ORIGIN=*
+      NODE_ENV: production
+      PORT: 5002
+      SQL_SERVER_HOST: sqlserver
+      SQL_SERVER_PORT: 1433
+      SQL_SERVER_USER: sa
+      SQL_SERVER_PASSWORD: 123456aA@$
+      CORS_ORIGIN: "*"
     depends_on:
       sqlserver:
         condition: service_healthy
-    restart: unless-stopped
     networks:
       - furnimart-network
+    restart: unless-stopped
+
+  delivery-service:
+    build:
+      context: ./backend/delivery-service
+      dockerfile: Dockerfile
+    container_name: furnimart-delivery-service
+    ports:
+      - "5005:5005"
+    environment:
+      NODE_ENV: production
+      PORT: 5005
+      SQL_SERVER_HOST: sqlserver
+      SQL_SERVER_PORT: 1433
+      SQL_SERVER_USER: sa
+      SQL_SERVER_PASSWORD: 123456aA@$
+      JWT_SECRET: FurniMartSuperSecretJwtKey2025!@@abc123def456ghi789jkl000mno
+      CORS_ORIGIN: "*"
+      UPLOAD_DIR: /app/uploads
+    volumes:
+      - ./backend/delivery-service/uploads:/app/uploads
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - furnimart-network
+    restart: unless-stopped
 
 volumes:
   sqlserver_data:
