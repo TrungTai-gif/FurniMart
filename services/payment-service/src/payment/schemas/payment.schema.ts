@@ -9,9 +9,10 @@ export class Payment {
   orderId!: string;
 
   @Prop({ required: true })
-  customerId!: double;
+  customerId!: string;
 
-
+  @Prop({ required: true })
+  amount!: number;
 
   @Prop({ required: true, enum: ['vnpay'], default: 'vnpay' })
   method!: string;
@@ -22,7 +23,8 @@ export class Payment {
   @Prop()
   transactionId?: string;
 
- 
+  @Prop({ type: MongooseSchema.Types.Mixed })
+  gatewayResponse?: any;
 
   @Prop()
   callbackUrl?: string;
@@ -33,7 +35,8 @@ export class Payment {
   @Prop()
   completedAt?: Date;
 
-
+  @Prop()
+  failedReason?: string;
 }
 
 export const PaymentSchema = SchemaFactory.createForClass(Payment);
