@@ -47,6 +47,7 @@ export class DashboardController {
     return this.dashboardService.getOrdersByStatus();
   }
 
+  
   @Get('revenue-chart')
   @Roles('admin', 'branch_manager')
   @UseGuards(RolesGuard)
@@ -55,6 +56,7 @@ export class DashboardController {
     const parsedDays = days ? parseInt(days, 10) : 30;
     return this.dashboardService.getRevenueChart(parsedDays);
   }
+
 
   @Get('category-stats')
   @Roles('admin', 'branch_manager')

@@ -15,7 +15,7 @@ COPY shared/index.ts ./shared/
 COPY shared/common ./shared/common
 COPY shared/types ./shared/types
 
-# Install shared dependencies and build
+# Install shared dependencies, build
 WORKDIR /app/shared
 RUN (npm ci --no-audit --no-fund 2>/dev/null) || npm install --no-audit --no-fund
 RUN npm run build
