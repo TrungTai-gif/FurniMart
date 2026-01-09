@@ -40,7 +40,16 @@ export class PaymentService {
     return payment.save();
   }
 
-
+  // Tạo URL thanh toán VNPay (theo code demo chính thức)
+  async createVnpayPaymentUrl(
+    orderId: string,
+    amount: number,
+    orderDescription: string,
+    ipAddr: string,
+    bankCode?: string,
+    orderType: string = 'other',
+    language: string = 'vn',
+  ): Promise<string> {
     try {
       const date = new Date();
       
@@ -86,7 +95,32 @@ export class PaymentService {
         }
       });
 
+      // Sắp xếp params theo alphabet (theo code demo VNPay)
+      const sortedParams = this.sortObject(vnp_Params);
+      
+      // Tạo chuỗi ký tự để ký (không encode - theo code demo)
+      const signData = qs.stringify(sortedParams, { encode: false });
+      
+      // Tạo chữ ký HMAC SHA512
+      const hmac = crypto.createHmac('sha512', this.vnp_HashSecret);
+      const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
+      
+      this.logger.debug(`VNPay Sign Data: ${signData}`);
+      this.logger.debug(`VNPay Signature: ${signed.substring(0, 20)}...`);
 
+      // Thêm chữ ký vào params
+      sortedParams['vnp_SecureHash'] = signed;
+
+      // Tạo URL thanh toán
+      const paymentUrl = this.vnp_Url + '?' + qs.stringify(sortedParams, { encode: false });
+
+      this.logger.log(`VNPay Payment URL created for orderId: ${orderId}`);
+      return paymentUrl;
+    } catch (error: any) {
+      this.logger.error(`Error creating VNPay payment URL: ${error.message}`, error.stack);
+      throw new BadRequestException(`Failed to create payment URL: ${error.message}`);
+    }
+  }
 
   // Xử lý IPN (Instant Payment Notification) từ VNPay (theo code demo)
   async handleVnpayIpn(vnp_Params: any): Promise<{ RspCode: string; Message: string }> {
@@ -130,6 +164,12 @@ export class PaymentService {
           status: 'pending',
           gatewayResponse: vnp_Params,
         });
+      }
+
+      // Kiểm tra nếu đã xử lý (RspCode: 02 = Order already confirmed)
+      if (payment.status === 'completed') {
+        this.logger.debug(`VNPay IPN - Payment already completed for orderId: ${orderId}`);
+        return { RspCode: '02', Message: 'Order already confirmed' };
       }
 
       // Cập nhật trạng thái thanh toán
