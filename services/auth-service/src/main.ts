@@ -17,18 +17,21 @@ async function bootstrap() {
     origin: true,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   });
 
   // Global Pipes
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
-      forbidNonWhitelisted: true,
+      forbidNonWhitelisted: false, // Allow extra fields that might be sent from frontend
       transform: true,
       transformOptions: {
         enableImplicitConversion: true,
       },
+      skipMissingProperties: false,
+      skipNullProperties: false,
+      skipUndefinedProperties: false,
     }),
   );
 
@@ -48,9 +51,11 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
 
   const PORT = process.env.PORT || 3002;
-  await app.listen(PORT, '0.0.0.0');
+  await app.listen(PORT);
 
-  console.log(`🚀 Auth Service running on http://localhost:${PORT}/api`);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`🚀 Auth Service running on http://localhost:${PORT}/api`);
+  }
 }
 
 bootstrap().catch((err: Error) => {
