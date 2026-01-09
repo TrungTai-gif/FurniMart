@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument } from 'mongoose';
+import { HydratedDocument, Schema as MongooseSchema } from 'mongoose';
 
 export type UserDocument = HydratedDocument<User>;
 
@@ -17,8 +17,11 @@ export class User {
   @Prop()
   phone?: string;
 
-  @Prop({ default: 'customer', enum: ['customer', 'employee', 'manager', 'shipper', 'admin'] })
+  @Prop({ default: 'customer', enum: ['customer', 'employee', 'branch_manager', 'shipper', 'admin'] })
   role!: string;
+
+  @Prop({ type: MongooseSchema.Types.ObjectId })
+  branchId?: string; // Chi nhánh cho employee (seller) và shipper (delivery)
 
   @Prop()
   address?: string;
