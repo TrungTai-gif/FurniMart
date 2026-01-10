@@ -30,13 +30,13 @@ export class Product {
   categoryId!: string;
 
   @Prop({ required: true })
-  category!: string;
+  category!: string; // Keep for backward compatibility and easier querying
 
   @Prop({ type: [String], default: [] })
-  materials!: string[];
+  materials!: string[]; // e.g., ['Gỗ', 'Da', 'Kim loại']
 
   @Prop({ type: [String], default: [] })
-  colors!: string[];
+  colors!: string[]; // e.g., ['Đen', 'Trắng', 'Xám']
 
   @Prop({ type: Object, default: {} })
   dimensions!: {
@@ -44,7 +44,7 @@ export class Product {
     width?: number;
     height?: number;
     weight?: number;
-    unit?: string;
+    unit?: string; // 'cm', 'm', 'kg'
   };
 
   @Prop({ default: 0 })
@@ -57,8 +57,9 @@ export class Product {
   isActive!: boolean;
 
   @Prop({ default: false })
-  isFeatured!: boolean;
-
+  isFeatured!: boolean; // Sản phẩm nổi bật
+  
+  // 8: Soft delete - không được xóa đơn hàng đã phát sinh
   @Prop()
   deletedAt?: Date;
 }

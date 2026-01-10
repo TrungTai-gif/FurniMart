@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Address } from "@/lib/types";
 import { useToast } from "@/hooks/useToast";
+import { userService } from "@/services/userService";
 
 export function AddressManager() {
   const { error: showError, success: showSuccess } = useToast();
@@ -22,10 +23,10 @@ export function AddressManager() {
   // Load addresses
   const loadAddresses = useCallback(async () => {
     try {
-      // Note: Adjust based on actual userService method
-      // For now, load from localStorage or API
-      setAddresses([]);
-    } catch {
+      const loadedAddresses = await userService.getAddresses();
+      setAddresses(loadedAddresses);
+    } catch (error) {
+      console.error("[AddressManager] Load error:", error);
       showError("Failed to load addresses");
     } finally {
       setLoading(false);
@@ -42,12 +43,12 @@ export function AddressManager() {
         showError("Please fill in all required fields");
         return;
       }
-      // Note: Implement actual API call
-      // const newAddress = await userService.addAddress(formData);
-      // setAddresses([...addresses, newAddress]);
+      const newAddress = await userService.addAddress(formData);
+      setAddresses([...addresses, newAddress]);
       resetForm();
       showSuccess("Address added successfully");
-    } catch {
+    } catch (error) {
+      console.error("[AddressManager] Add error:", error);
       showError("Failed to add address");
     }
   };
@@ -55,31 +56,34 @@ export function AddressManager() {
   const handleUpdateAddress = async () => {
     if (!editingId) return;
     try {
-      // const updated = await userService.updateAddress(editingId, formData);
-      // setAddresses(addresses.map(a => a.id === editingId ? updated : a));
+      const updated = await userService.updateAddress(editingId, formData);
+      setAddresses(addresses.map((a) => (a.id === editingId ? updated : a)));
       resetForm();
       showSuccess("Address updated successfully");
-    } catch {
+    } catch (error) {
+      console.error("[AddressManager] Update error:", error);
       showError("Failed to update address");
     }
   };
 
   const handleDeleteAddress = async (id: string) => {
     try {
-      // await userService.deleteAddress(id);
+      await userService.deleteAddress(id);
       setAddresses(addresses.filter((a) => a.id !== id));
       showSuccess("Address deleted");
-    } catch {
+    } catch (error) {
+      console.error("[AddressManager] Delete error:", error);
       showError("Failed to delete address");
     }
   };
 
   const handleSetDefault = async (id: string) => {
     try {
-      // await userService.setDefaultAddress(id);
+      await userService.setDefaultAddress(id);
       setAddresses(addresses.map((a) => ({ ...a, isDefault: a.id === id })));
       showSuccess("Default address updated");
-    } catch {
+    } catch (error) {
+      console.error("[AddressManager] Set default error:", error);
       showError("Failed to set default address");
     }
   };

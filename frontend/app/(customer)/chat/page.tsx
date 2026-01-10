@@ -9,6 +9,7 @@ import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import { FiSend, FiUser, FiHeadphones } from "react-icons/fi";
 import { cn } from "@/lib/utils";
+import type { ChatMessage } from "@/lib/types";
 
 export default function ChatPage() {
     const { user } = useAuthStore();
@@ -16,7 +17,7 @@ export default function ChatPage() {
     const scrollRef = useRef<HTMLDivElement>(null);
 
     // Fetch conversation history
-    const { data: messages, refetch } = useQuery({
+    const { data: messages, refetch } = useQuery<ChatMessage[]>({
         queryKey: ["chat-messages", "support"],
         queryFn: () => chatService.getMessages("support"), // Assuming 'support' is the general channel or create new
         refetchInterval: 3000, // Simple polling for demo
@@ -61,19 +62,27 @@ export default function ChatPage() {
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-secondary-50/30" ref={scrollRef}>
                     {messages && messages.length > 0 ? (
-                        messages.map((msg: any) => {
+                        messages.map((msg, index) => {
                             const isMe = msg.senderId === user?.id;
+                            const messageText = msg.content ?? msg.message;
+                            const messageTimestamp = msg.createdAt ?? msg.sentAt;
+                            const formattedTime = messageTimestamp
+                              ? new Date(messageTimestamp).toLocaleTimeString([], {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                              : "";
                             return (
-                                <div key={msg.id} className={cn("flex", isMe ? "justify-end" : "justify-start")}>
+                                <div key={`msg-${index}-${msg.sentAt}`} className={cn("flex", isMe ? "justify-end" : "justify-start")}>
                                     <div className={cn(
                                         "max-w-[70%] rounded-2xl px-4 py-3 shadow-sm",
                                         isMe
                                             ? "bg-primary-600 text-white rounded-br-none"
                                             : "bg-white text-secondary-900 border border-secondary-100 rounded-bl-none"
                                     )}>
-                                        <p className="text-sm">{msg.content}</p>
+                                        <p className="text-sm">{messageText}</p>
                                         <p className={cn("text-[10px] mt-1 text-right opacity-70", isMe ? "text-primary-100" : "text-secondary-400")}>
-                                            {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            {formattedTime}
                                         </p>
                                     </div>
                                 </div>

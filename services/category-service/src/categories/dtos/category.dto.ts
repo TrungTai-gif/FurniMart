@@ -53,3 +53,4 @@ export class UpdateCategoryDto {
   @IsBoolean()
   isActive?: boolean;
 }
+

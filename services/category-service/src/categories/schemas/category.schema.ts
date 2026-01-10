@@ -9,7 +9,7 @@ export class Category {
   name!: string;
 
   @Prop({ required: true })
-  slug!: string;
+  slug!: string; // URL-friendly name
 
   @Prop()
   description?: string;
@@ -18,14 +18,15 @@ export class Category {
   image?: string;
 
   @Prop({ type: String })
-  parentId?: string;
+  parentId?: string; // For subcategories
 
   @Prop({ default: 0 })
-  sortOrder!: number;
+  sortOrder!: number; // For ordering in UI
 
   @Prop({ default: true })
   isActive!: boolean;
-
+  
+  // 8: Soft delete
   @Prop()
   deletedAt?: Date;
 }
@@ -33,3 +34,4 @@ export class Category {
 export const CategorySchema = SchemaFactory.createForClass(Category);
 CategorySchema.index({ slug: 1 });
 CategorySchema.index({ parentId: 1 });
+

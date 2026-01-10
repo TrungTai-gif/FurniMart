@@ -24,7 +24,7 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
-      forbidNonWhitelisted: false,
+      forbidNonWhitelisted: false, // Allow extra fields that might be sent from frontend
       transform: true,
       transformOptions: {
         enableImplicitConversion: true,
@@ -42,7 +42,7 @@ async function bootstrap() {
   // Swagger Documentation
   const config = new DocumentBuilder()
     .setTitle('FurniMart Promotion Service')
-    .setDescription('Promotion Service')
+    .setDescription('Promotion & Discount Management Service')
     .setVersion('1.0.0')
     .addBearerAuth()
     .build();
@@ -59,6 +59,7 @@ async function bootstrap() {
 }
 
 bootstrap().catch((err: Error) => {
-  console.error(`❌ Failed to start promotion-service:`, err);
+  console.error('❌ Failed to start Promotion Service:', err);
   process.exit(1);
 });
+

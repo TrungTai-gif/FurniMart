@@ -14,6 +14,7 @@ import Badge from "@/components/ui/Badge";
 import EmptyState from "@/components/ui/EmptyState";
 import { FiDollarSign, FiPlus, FiArrowDownLeft, FiArrowUpRight, FiClock } from "react-icons/fi";
 import { useAuthStore } from "@/store/authStore";
+import type { Wallet, WalletTransaction } from "@/lib/types";
 
 export default function WalletPage() {
     const { user } = useAuthStore();
@@ -21,13 +22,13 @@ export default function WalletPage() {
     const [topUpModalOpen, setTopUpModalOpen] = useState(false);
     const [topUpAmount, setTopUpAmount] = useState<string>("");
 
-    const { data: wallet, isLoading } = useQuery({
+    const { data: wallet, isLoading } = useQuery<Wallet>({
         queryKey: ["wallet", user?.id],
         queryFn: walletService.getWallet,
         enabled: !!user,
     });
 
-    const { data: transactions } = useQuery({
+    const { data: transactions } = useQuery<WalletTransaction[]>({
         queryKey: ["wallet-transactions", user?.id],
         queryFn: () => walletService.getTransactions(),
         enabled: !!user,
@@ -35,7 +36,7 @@ export default function WalletPage() {
 
     const topUpMutation = useMutation({
         mutationFn: (amount: number) => walletService.deposit({ amount, method: 'VNPAY' }),
-        onSuccess: (data: any) => {
+        onSuccess: (data: WalletTransaction & { paymentUrl?: string }) => {
             // Handle payment URL redirect if provided
             if (data?.paymentUrl) {
                 window.location.href = data.paymentUrl;
@@ -103,7 +104,7 @@ export default function WalletPage() {
                                 />
                             ) : (
                                 <div className="space-y-4">
-                                    {transactions.map((tx: any) => (
+                                    {transactions.map((tx) => (
                                         <div key={tx.id} className="flex items-center justify-between p-4 border border-secondary-100 rounded-lg hover:bg-secondary-50 transition-colors">
                                             <div className="flex items-center gap-4">
                                                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${tx.type === 'DEPOSIT' ? 'bg-success-100 text-success-600' :

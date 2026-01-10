@@ -29,6 +29,7 @@ import {
   FiDollarSign,
   FiArchive,
 } from "react-icons/fi";
+import { routes } from "@/lib/config/routes";
 
 export interface MenuGroup {
   id: string;
@@ -58,7 +59,7 @@ export const dashboardMenuGroups: Record<string, MenuGroup[]> = {
       items: [
         {
           id: "dashboard",
-          href: "/admin",
+          href: routes.admin.dashboard,
           label: "Dashboard",
           icon: FiLayout,
           description: "Tổng quan hệ thống",
@@ -71,7 +72,7 @@ export const dashboardMenuGroups: Record<string, MenuGroup[]> = {
       items: [
         {
           id: "products",
-          href: "/admin/products",
+          href: routes.admin.products,
           label: "Sản phẩm",
           icon: FiPackage,
           description: "Quản lý sản phẩm",
@@ -84,7 +85,7 @@ export const dashboardMenuGroups: Record<string, MenuGroup[]> = {
       items: [
         {
           id: "categories",
-          href: "/admin/categories",
+          href: routes.admin.categories,
           label: "Danh mục",
           icon: FiTag,
           description: "Quản lý danh mục",
@@ -97,7 +98,7 @@ export const dashboardMenuGroups: Record<string, MenuGroup[]> = {
       items: [
         {
           id: "promotions",
-          href: "/admin/promotions",
+          href: routes.admin.promotions,
           label: "Khuyến mãi",
           icon: FiGift,
           description: "Quản lý khuyến mãi",
@@ -110,7 +111,7 @@ export const dashboardMenuGroups: Record<string, MenuGroup[]> = {
       items: [
         {
           id: "orders",
-          href: "/admin/orders",
+          href: routes.admin.orders,
           label: "Đơn hàng",
           icon: FiShoppingCart,
           description: "Quản lý đơn hàng",
@@ -123,7 +124,7 @@ export const dashboardMenuGroups: Record<string, MenuGroup[]> = {
       items: [
         {
           id: "payments",
-          href: "/admin/payments",
+          href: routes.admin.payments,
           label: "Thanh toán",
           icon: FiCreditCard,
           description: "Quản lý thanh toán",
@@ -136,7 +137,7 @@ export const dashboardMenuGroups: Record<string, MenuGroup[]> = {
       items: [
         {
           id: "wallets",
-          href: "/admin/wallets",
+          href: routes.admin.wallets,
           label: "Ví điện tử",
           icon: FiDollarSign,
           description: "Quản lý ví điện tử",
@@ -149,7 +150,7 @@ export const dashboardMenuGroups: Record<string, MenuGroup[]> = {
       items: [
         {
           id: "users",
-          href: "/admin/users",
+          href: routes.admin.users,
           label: "Người dùng",
           icon: FiUsers,
           description: "Quản lý người dùng",
@@ -162,7 +163,7 @@ export const dashboardMenuGroups: Record<string, MenuGroup[]> = {
       items: [
         {
           id: "branches",
-          href: "/admin/branches",
+          href: routes.admin.branches,
           label: "Chi nhánh",
           icon: FiBox,
           description: "Quản lý chi nhánh",
@@ -175,7 +176,7 @@ export const dashboardMenuGroups: Record<string, MenuGroup[]> = {
       items: [
         {
           id: "disputes",
-          href: "/admin/disputes",
+          href: routes.admin.disputes,
           label: "Khiếu nại",
           icon: FiAlertCircle,
           description: "Xử lý khiếu nại",
@@ -188,7 +189,7 @@ export const dashboardMenuGroups: Record<string, MenuGroup[]> = {
       items: [
         {
           id: "chat",
-          href: "/admin/chat",
+          href: routes.admin.chat,
           label: "Chat",
           icon: FiMessageSquare,
           description: "Hỗ trợ khách hàng",
@@ -201,7 +202,7 @@ export const dashboardMenuGroups: Record<string, MenuGroup[]> = {
       items: [
         {
           id: "reports",
-          href: "/admin/reports",
+          href: routes.admin.reports,
           label: "Báo cáo",
           icon: FiBarChart,
           description: "Báo cáo & Thống kê",
@@ -214,7 +215,7 @@ export const dashboardMenuGroups: Record<string, MenuGroup[]> = {
       items: [
         {
           id: "settings",
-          href: "/admin/settings",
+          href: routes.admin.settings,
           label: "Cài đặt hệ thống",
           icon: FiSettings,
           description: "Cấu hình hệ thống",

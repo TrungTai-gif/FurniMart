@@ -611,7 +611,7 @@ export default function AdminSettingsPage() {
                   {(!headerFormData.navigationItems ||
                     headerFormData.navigationItems.length === 0) && (
                     <div className="text-center py-8 text-secondary-500 text-sm">
-                      Chưa có menu nào. Nhấn "Thêm menu" để bắt đầu.
+                      Chưa có menu nào. Nhấn &quot;Thêm menu&quot; để bắt đầu.
                     </div>
                   )}
                 </div>

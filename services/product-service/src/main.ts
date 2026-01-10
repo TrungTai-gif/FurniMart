@@ -24,7 +24,7 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
-      forbidNonWhitelisted: false,
+      forbidNonWhitelisted: false, // Allow extra fields that might be sent from frontend
       transform: true,
       transformOptions: {
         enableImplicitConversion: true,

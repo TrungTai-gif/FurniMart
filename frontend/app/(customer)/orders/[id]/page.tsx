@@ -27,10 +27,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { disputeSchema } from "@/lib/validation";
 import { FiAlertCircle } from "react-icons/fi";
+import type { AxiosError } from "axios";
 
 type DisputeForm = {
   orderId: string;
-  type: string;
+  type: "quality" | "damage" | "missing" | "wrong_item" | "delivery" | "payment" | "other" | "return" | "warranty" | "assembly";
   reason: string;
   description: string;
 };
@@ -85,14 +86,14 @@ export default function OrderDetailPage() {
       setCancelModalOpen(false);
       setCancelReason("");
     },
-    onError: (error: any) => {
+    onError: (error: AxiosError<{ message?: string }>) => {
       toast.error(error?.response?.data?.message || "Không thể hủy đơn hàng");
     },
   });
 
   // Check if order can be cancelled (2: chỉ khi chưa PACKING)
   const canCancel = order && (
-    order.status === "PENDING_CONFIRMATION" || 
+    order.status === "PENDING_CONFIRMATION" ||
     order.status === "pending" ||
     order.status === "CONFIRMED" ||
     order.status === "confirmed"
@@ -107,7 +108,7 @@ export default function OrderDetailPage() {
   );
 
   // Dispute form
-  const { register, handleSubmit, formState: { errors }, reset } = useForm({
+  const { register, handleSubmit, formState: { errors }, reset } = useForm<DisputeForm>({
     resolver: zodResolver(disputeSchema),
     defaultValues: {
       orderId: orderId,
@@ -118,7 +119,7 @@ export default function OrderDetailPage() {
   });
 
   const createDisputeMutation = useMutation({
-    mutationFn: (data: any) => disputeService.create(data),
+    mutationFn: (data: DisputeForm) => disputeService.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["dispute", "order", orderId] });
       queryClient.invalidateQueries({ queryKey: ["disputes", "my"] });
@@ -126,12 +127,12 @@ export default function OrderDetailPage() {
       setDisputeModalOpen(false);
       reset();
     },
-    onError: (error: any) => {
+    onError: (error: AxiosError<{ message?: string }>) => {
       toast.error(error?.response?.data?.message || "Không thể tạo yêu cầu hỗ trợ");
     },
   });
 
-  const onSubmitDispute = (data: any) => {
+  const onSubmitDispute = (data: DisputeForm) => {
     createDisputeMutation.mutate(data);
   };
 
@@ -263,15 +264,15 @@ export default function OrderDetailPage() {
                           order.paymentStatus === "paid"
                             ? "success"
                             : order.paymentStatus === "pending"
-                            ? "warning"
-                            : "danger"
+                              ? "warning"
+                              : "danger"
                         }
                       >
                         {order.paymentStatus === "paid"
                           ? "Đã thanh toán"
                           : order.paymentStatus === "pending"
-                          ? "Chờ thanh toán"
-                          : "Thất bại"}
+                            ? "Chờ thanh toán"
+                            : "Thất bại"}
                       </Badge>
                     </div>
                     {order.branch && (
@@ -403,7 +404,7 @@ export default function OrderDetailPage() {
       >
         <form onSubmit={handleSubmit(onSubmitDispute)} className="space-y-4">
           <input type="hidden" {...register("orderId")} value={orderId} />
-          
+
           <div>
             <label className="block text-sm font-medium text-secondary-700 mb-2">
               Loại yêu cầu
@@ -473,4 +474,3 @@ export default function OrderDetailPage() {
     </PageShell>
   );
 }
-

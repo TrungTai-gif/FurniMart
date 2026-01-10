@@ -48,33 +48,29 @@ export function normalizeImageUrl(
 ): string | null {
   if (!imageUrl) return null;
 
-  // Remove http:// or https:// and domain
-  let cleaned = imageUrl;
-  if (cleaned.startsWith("http")) {
-    const urlMatch = cleaned.match(/https?:\/\/[^/]+(.+)$/);
-    if (urlMatch) {
-      cleaned = urlMatch[1];
-    }
-  }
+  const apiBaseUrl =
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+  const apiRoot = apiBaseUrl.replace(/\/api\/?$/, "");
+  const withApiRoot = (path: string) =>
+    path.startsWith("http") ? path : `${apiRoot}${path}`;
 
-  // Try to parse the image URL
-  const parsed = parseImageUrl(cleaned);
-  if (parsed) {
-    return `/api/upload/${parsed.folder}/${parsed.filename}`;
-  }
-
-  // If it's already an API endpoint, return as-is
-  if (imageUrl.startsWith("/api/upload/")) {
+  // Keep absolute URLs as-is (external images or already absolute uploads)
+  if (imageUrl.startsWith("http")) {
     return imageUrl;
   }
 
-  // If it's a public image path, return as-is
+  if (imageUrl.startsWith("/api/upload/")) {
+    return withApiRoot(imageUrl);
+  }
+
   if (imageUrl.startsWith("/images/")) {
-    // Try converting to API endpoint
-    const parsed = parseImageUrl(imageUrl);
-    if (parsed) {
-      return `/api/upload/${parsed.folder}/${parsed.filename}`;
-    }
+    return withApiRoot(imageUrl);
+  }
+
+  // Try to parse the image URL
+  const parsed = parseImageUrl(imageUrl);
+  if (parsed) {
+    return withApiRoot(`/api/upload/${parsed.folder}/${parsed.filename}`);
   }
 
   // Fallback: return original URL

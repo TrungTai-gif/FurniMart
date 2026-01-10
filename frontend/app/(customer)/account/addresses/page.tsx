@@ -21,6 +21,7 @@ import ErrorState from "@/components/ui/ErrorState";
 import { toast } from "react-toastify";
 import { FiMapPin, FiEdit, FiTrash2, FiPlus, FiCheck } from "react-icons/fi";
 import { Address, User } from "@/lib/types";
+import type { AxiosError } from "axios";
 
 type AddressForm = z.infer<typeof addressSchema>;
 
@@ -78,7 +79,7 @@ export default function AddressesPage() {
   });
 
   const updateAddressMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<AddressForm> }) =>
+    mutationFn: ({ id, data }: { id: string; data: Partial<Address> }) =>
       userService.updateAddress(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["addresses"] });
@@ -88,8 +89,12 @@ export default function AddressesPage() {
       setEditingAddress(null);
       reset();
     },
-    onError: () => {
-      toast.error("Không thể cập nhật địa chỉ");
+    onError: (error: AxiosError<{ message?: string }>) => {
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Không thể cập nhật địa chỉ";
+      toast.error(message);
     },
   });
 
@@ -119,7 +124,10 @@ export default function AddressesPage() {
 
   const onSubmit = (data: AddressForm) => {
     // Backend AddressDto requires: name, phone, street, ward, district, city, isDefault
-    const addressData = {
+    const addressData: Omit<
+      Address,
+      "id" | "userId" | "createdAt" | "updatedAt"
+    > = {
       name: data.fullName,
       phone: data.phone,
       street: data.address,
@@ -128,9 +136,14 @@ export default function AddressesPage() {
       city: data.city,
       isDefault: data.isDefault || false,
     };
-    if (editingAddress && editingAddress.id) {
+    if (editingAddress && (editingAddress.id || editingAddress._id)) {
+      const addressId = String(editingAddress.id || editingAddress._id);
+      if (!addressId) {
+        toast.error("Không tìm thấy ID địa chỉ");
+        return;
+      }
       updateAddressMutation.mutate({
-        id: editingAddress.id,
+        id: addressId,
         data: addressData,
       });
     } else {
@@ -139,7 +152,10 @@ export default function AddressesPage() {
   };
 
   const handleEdit = (address: Address) => {
-    setEditingAddress(address);
+    setEditingAddress({
+      ...address,
+      id: address.id || address._id,
+    });
     // Reset form với dữ liệu địa chỉ cũ
     reset({
       fullName: address.fullName || address.name || "",
@@ -240,8 +256,8 @@ export default function AddressesPage() {
                       </div>
                       <p className="text-secondary-600 mb-1">{address.phone}</p>
                       <p className="text-secondary-600">
-                        {address.address}, {address.ward}, {address.district},{" "}
-                        {address.city}
+                        {address.address || address.street}, {address.ward},{" "}
+                        {address.district}, {address.city}
                       </p>
                     </div>
                   </div>

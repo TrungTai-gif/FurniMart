@@ -15,15 +15,13 @@ export default function Product3DViewer({
   model3d,
 }: Product3DViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const actualModelUrl = model3d || modelUrl;
+  const missingModel = !actualModelUrl;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const actualModelUrl = model3d || modelUrl;
-
   useEffect(() => {
-    if (!containerRef.current || !actualModelUrl) {
-      setError("No model URL provided");
-      setLoading(false);
+    if (!containerRef.current || missingModel) {
       return;
     }
 
@@ -132,16 +130,20 @@ export default function Product3DViewer({
       };
     } catch (err) {
       console.error("[3D] Setup error:", err);
-      setError("Failed to initialize 3D viewer");
-      setLoading(false);
+      queueMicrotask(() => {
+        setError("Failed to initialize 3D viewer");
+        setLoading(false);
+      });
     }
   }, [actualModelUrl]);
+
+  const displayError = missingModel ? "No model URL provided" : error;
 
   return (
     <div className="w-full h-96 relative bg-gray-100 rounded-lg overflow-hidden">
       <div ref={containerRef} className="w-full h-full" />
 
-      {loading && (
+      {loading && !displayError && (
         <div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm">
           <div className="text-center">
             <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
@@ -150,11 +152,11 @@ export default function Product3DViewer({
         </div>
       )}
 
-      {error && (
+      {displayError && (
         <div className="absolute inset-0 flex items-center justify-center bg-red-50/90 p-4">
           <div className="text-center">
             <p className="text-red-600 text-xs whitespace-pre-wrap font-mono mb-4">
-              {error}
+              {displayError}
             </p>
             <button
               onClick={() => window.location.reload()}

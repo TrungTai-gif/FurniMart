@@ -87,13 +87,13 @@ export default function DataTable<T extends { id?: string | number } = { id?: st
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell {...({ colSpan: columns.length } as any)} className="text-center py-8">
+                <TableCell colSpan={columns.length} className="text-center py-8">
                   <div className="animate-pulse text-secondary-500">Loading...</div>
                 </TableCell>
               </TableRow>
             ) : data.length === 0 ? (
               <TableRow>
-                <TableCell {...({ colSpan: columns.length } as any)} className="text-center py-8">
+                <TableCell colSpan={columns.length} className="text-center py-8">
                   {emptyState || (
                     <div className="text-secondary-500">No data available</div>
                   )}

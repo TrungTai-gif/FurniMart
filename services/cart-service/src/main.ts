@@ -59,7 +59,7 @@ async function bootstrap() {
 }
 
 bootstrap().catch((err: Error) => {
-  console.error(` Failed to start cart-service:`, err);
+  console.error(`❌ Failed to start cart-service:`, err);
   process.exit(1);
 });
 

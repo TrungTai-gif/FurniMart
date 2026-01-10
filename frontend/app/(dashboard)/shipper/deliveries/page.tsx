@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/authStore";
 import { orderService } from "@/services/orderService";
+import PageShell from "@/components/layouts/PageShell";
 import PageHeader from "@/components/layouts/PageHeader";
 import DataTable from "@/components/dashboard/DataTable";
 import FilterBar from "@/components/dashboard/FilterBar";
@@ -12,9 +13,10 @@ import Select from "@/components/ui/Select";
 import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
 import Badge from "@/components/ui/Badge";
+import StatCard from "@/components/dashboard/StatCard";
 import { Order } from "@/lib/types";
 import { formatCurrency, formatShippingAddress } from "@/lib/format";
-import { FiTruck } from "react-icons/fi";
+import { FiCheckCircle, FiClock, FiTruck } from "react-icons/fi";
 import { toast } from "react-toastify";
 import Link from "next/link";
 import { routes } from "@/lib/config/routes";
@@ -45,6 +47,10 @@ export default function ShipperDeliveriesPage() {
     queryFn: () => orderService.getOrdersForShipper(),
     enabled: !!user?.branchId,
   });
+
+  const readyToShipCount = data?.filter((order: Order) => order.status.toUpperCase() === "READY_TO_SHIP").length || 0;
+  const shippingCount = data?.filter((order: Order) => order.status.toUpperCase() === "SHIPPING").length || 0;
+  const deliveredCount = data?.filter((order: Order) => order.status.toUpperCase() === "DELIVERED").length || 0;
 
   const filteredData = data?.filter((order: Order) => {
     if (statusFilter === "all") return true;
@@ -165,7 +171,7 @@ export default function ShipperDeliveriesPage() {
 
   if (!user?.branchId) {
     return (
-      <div className="space-y-6">
+      <PageShell>
         <PageHeader
           title="Quản lý giao hàng"
           breadcrumbs={[{ label: "Dashboard", href: "/shipper" }, { label: "Giao hàng" }]}
@@ -174,12 +180,12 @@ export default function ShipperDeliveriesPage() {
           title="Bạn chưa được gán cho chi nhánh nào"
           description="Vui lòng liên hệ quản lý chi nhánh"
         />
-      </div>
+      </PageShell>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <PageShell>
       <PageHeader
         title="Quản lý giao hàng"
         breadcrumbs={[
@@ -187,53 +193,98 @@ export default function ShipperDeliveriesPage() {
           { label: "Giao hàng" },
         ]}
       />
-      {/* SHIPPER: Mobile-first layout - tối giản, nút lớn, dễ thao tác */}
-      <div className="space-y-4 md:space-y-6">
-        {/* SHIPPER: Chỉ thấy đơn được gán - không search toàn hệ thống */}
-        <div className="mb-4 p-3 bg-primary-50 border border-primary-200 rounded-md">
-          <p className="text-sm text-primary-700">
-            📦 Chỉ hiển thị đơn hàng được phân công cho bạn ({filteredData.length} đơn)
-          </p>
-        </div>
-        <DataTable
-          columns={columns}
-          data={filteredData}
-          isLoading={isLoading}
-          toolbar={
-            <FilterBar
-              filters={
-                <Select
-                  options={[
-                    { value: "all", label: "Tất cả trạng thái" },
-                    { value: "READY_TO_SHIP", label: "Sẵn sàng giao" },
-                    { value: "SHIPPING", label: "Đang giao" },
-                    { value: "DELIVERED", label: "Đã giao" },
-                    { value: "FAILED_DELIVERY", label: "Giao thất bại" },
-                  ]}
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full md:w-48"
-                />
-              }
-            />
-          }
-          emptyState={
-            <EmptyState
-              icon={<FiTruck className="w-16 h-16 text-stone-300" />}
-              title="Chưa có đơn hàng nào được phân công"
-              description="Đơn hàng được phân công sẽ hiển thị tại đây"
-            />
-          }
-        />
-        {isError && (
-          <ErrorState
-            title="Không thể tải đơn hàng"
-            description="Vui lòng thử lại sau"
-            action={{ label: "Thử lại", onClick: () => refetch() }}
+      <main className="space-y-6">
+        <section className="relative overflow-hidden rounded-2xl border border-secondary-100 bg-gradient-to-br from-primary-50 via-white to-secondary-50 p-6 md:p-8">
+          <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-sm text-secondary-500">Đơn hàng được phân công</p>
+              <h2 className="mt-2 text-2xl font-semibold text-secondary-900 md:text-3xl">
+                Theo dõi tiến độ giao hàng và cập nhật trạng thái theo tuyến
+              </h2>
+              <p className="mt-3 text-sm text-secondary-600 md:text-base">
+                Ưu tiên đơn sẵn sàng giao, đảm bảo lộ trình an toàn và đúng hẹn.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Link href={routes.shipper.history} className="inline-flex">
+                <Button variant="outline" size="sm">Lịch sử giao hàng</Button>
+              </Link>
+              <Link href={routes.shipper.dashboard} className="inline-flex">
+                <Button size="sm">Về dashboard</Button>
+              </Link>
+            </div>
+          </div>
+          <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-primary-200/40 blur-3xl" />
+        </section>
+
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          <StatCard
+            title="Sẵn sàng giao"
+            value={isLoading ? "—" : readyToShipCount}
+            icon={<FiClock className="h-6 w-6" />}
+            className="bg-white/80"
           />
-        )}
-      </div>
-    </div>
+          <StatCard
+            title="Đang giao"
+            value={isLoading ? "—" : shippingCount}
+            icon={<FiTruck className="h-6 w-6" />}
+            className="bg-white/80"
+          />
+          <StatCard
+            title="Đã giao"
+            value={isLoading ? "—" : deliveredCount}
+            icon={<FiCheckCircle className="h-6 w-6" />}
+            className="bg-white/80"
+          />
+        </div>
+
+        {/* SHIPPER: Mobile-first layout - tối giản, nút lớn, dễ thao tác */}
+        <div className="space-y-4 md:space-y-6">
+          {/* SHIPPER: Chỉ thấy đơn được gán - không search toàn hệ thống */}
+          <div className="rounded-2xl border border-primary-100 bg-primary-50 p-4">
+            <p className="text-sm text-primary-700">
+              📦 Chỉ hiển thị đơn hàng được phân công cho bạn ({filteredData.length} đơn)
+            </p>
+          </div>
+          <DataTable
+            columns={columns}
+            data={filteredData}
+            isLoading={isLoading}
+            toolbar={
+              <FilterBar
+                filters={
+                  <Select
+                    options={[
+                      { value: "all", label: "Tất cả trạng thái" },
+                      { value: "READY_TO_SHIP", label: "Sẵn sàng giao" },
+                      { value: "SHIPPING", label: "Đang giao" },
+                      { value: "DELIVERED", label: "Đã giao" },
+                      { value: "FAILED_DELIVERY", label: "Giao thất bại" },
+                    ]}
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="w-full md:w-48"
+                  />
+                }
+              />
+            }
+            emptyState={
+              <EmptyState
+                icon={<FiTruck className="w-16 h-16 text-stone-300" />}
+                title="Chưa có đơn hàng nào được phân công"
+                description="Đơn hàng được phân công sẽ hiển thị tại đây"
+              />
+            }
+          />
+          {isError && (
+            <ErrorState
+              title="Không thể tải đơn hàng"
+              description="Vui lòng thử lại sau"
+              action={{ label: "Thử lại", onClick: () => refetch() }}
+            />
+          )}
+        </div>
+      </main>
+    </PageShell>
   );
 }
-

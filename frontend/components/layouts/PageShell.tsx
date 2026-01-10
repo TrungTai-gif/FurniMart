@@ -42,7 +42,7 @@ export default function PageShell({
       className={cn(
         pageContainer,
         maxWidthClasses[maxWidth],
-        "w-full max-w-full",
+        "w-full",
         className
       )}
     >

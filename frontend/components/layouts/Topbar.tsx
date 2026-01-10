@@ -4,7 +4,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
 import { FiUser, FiLogOut, FiBell } from "react-icons/fi";
 import { useState } from "react";
-import Button from "@/components/ui/Button";
+import { getDashboardRoute } from "@/lib/auth/roles";
 
 interface TopbarProps {
   notifications?: number;
@@ -20,27 +20,13 @@ export default function Topbar({ notifications }: TopbarProps) {
     router.push("/auth/login");
   };
 
-  const getDashboardLink = () => {
-    if (!user?.role) return "/";
-    switch (user.role) {
-      case "admin":
-        return "/admin";
-      case "branch_manager":
-        return "/manager";
-      case "employee":
-        return "/employee";
-      case "shipper":
-        return "/shipper";
-      default:
-        return "/account";
-    }
-  };
+  const getDashboardLink = () => getDashboardRoute(user?.role);
 
   return (
     <div className="sticky top-0 z-40 bg-white border-b border-secondary-200 w-full max-w-full overflow-x-hidden">
       <div className="px-6 py-4 flex items-center justify-between w-full max-w-full">
         <div className="flex items-center gap-4">
-          <h1 className="text-xl font-medium text-secondary-900 tracking-tight">FurniMart</h1>
+          <h1 className="text-xl font-medium text-secondary-900 tracking-tight lg:hidden">FurniMart</h1>
         </div>
 
         <div className="flex items-center gap-4">

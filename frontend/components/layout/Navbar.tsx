@@ -16,6 +16,7 @@ import { productService } from "@/services/productService";
 import { useDebounce } from "@/hooks/useDebounce";
 import Image from "next/image";
 import { formatCurrency } from "@/lib/format";
+import { getDashboardRoute } from "@/lib/auth/roles";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -76,16 +77,7 @@ export default function Navbar() {
     window.location.href = "/";
   };
 
-  const getDashboardLink = () => {
-    if (!role) return "/";
-    switch (role) {
-      case "admin": return "/admin";
-      case "branch_manager": return "/manager";
-      case "employee": return "/employee";
-      case "shipper": return "/shipper";
-      default: return "/account";
-    }
-  };
+  const getDashboardLink = () => getDashboardRoute(role || undefined);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

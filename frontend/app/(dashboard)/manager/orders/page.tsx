@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/authStore";
 import { orderService } from "@/services/orderService";
+import PageShell from "@/components/layouts/PageShell";
 import PageHeader from "@/components/layouts/PageHeader";
 import DataTable from "@/components/dashboard/DataTable";
 import FilterBar from "@/components/dashboard/FilterBar";
@@ -12,9 +13,10 @@ import Select from "@/components/ui/Select";
 import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
 import Badge from "@/components/ui/Badge";
+import StatCard from "@/components/dashboard/StatCard";
 import { Order } from "@/lib/types";
 import { formatCurrency } from "@/lib/format";
-import { FiPackage } from "react-icons/fi";
+import { FiClipboard, FiPackage, FiTruck } from "react-icons/fi";
 import { toast } from "react-toastify";
 import Link from "next/link";
 
@@ -55,6 +57,12 @@ export default function ManagerOrdersPage() {
     }),
     enabled: !!user?.branchId,
   });
+
+  const totalOrders = data?.total || 0;
+  const pageOrders = data?.items || [];
+  const pendingCount = pageOrders.filter((order) => order.status.toUpperCase() === "PENDING_CONFIRMATION").length;
+  const packingCount = pageOrders.filter((order) => order.status.toUpperCase() === "PACKING").length;
+  const shippingCount = pageOrders.filter((order) => order.status.toUpperCase() === "SHIPPING").length;
 
   const updateStatusMutation = useMutation({
     mutationFn: ({ orderId, status }: { orderId: string; status: string }) =>
@@ -154,7 +162,7 @@ export default function ManagerOrdersPage() {
 
   if (!user?.branchId) {
     return (
-      <div className="space-y-6">
+      <PageShell>
         <PageHeader
           title="Quản lý đơn hàng"
           breadcrumbs={[{ label: "Dashboard", href: "/manager" }, { label: "Đơn hàng" }]}
@@ -163,12 +171,12 @@ export default function ManagerOrdersPage() {
           title="Bạn chưa được gán cho chi nhánh nào"
           description="Vui lòng liên hệ quản trị viên để được gán chi nhánh"
         />
-      </div>
+      </PageShell>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <PageShell>
       <PageHeader
         title="Quản lý đơn hàng"
         breadcrumbs={[
@@ -176,7 +184,57 @@ export default function ManagerOrdersPage() {
           { label: "Đơn hàng" },
         ]}
       />
-      <div className="space-y-6">
+      <main className="space-y-6">
+        <section className="relative overflow-hidden rounded-2xl border border-secondary-100 bg-gradient-to-br from-secondary-50 via-white to-primary-50 p-6 md:p-8">
+          <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-sm text-secondary-500">Điều phối đơn hàng</p>
+              <h2 className="mt-2 text-2xl font-semibold text-secondary-900 md:text-3xl">
+                Theo dõi trạng thái xử lý và luồng vận hành của chi nhánh
+              </h2>
+              <p className="mt-3 text-sm text-secondary-600 md:text-base">
+                Lọc nhanh đơn theo trạng thái, cập nhật ngay khi có thay đổi mới.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/manager/inventory" className="inline-flex">
+                <Button size="sm" variant="outline">Kiểm tra tồn kho</Button>
+              </Link>
+              <Link href="/manager/employees" className="inline-flex">
+                <Button size="sm">Phân công nhân sự</Button>
+              </Link>
+            </div>
+          </div>
+          <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-primary-200/40 blur-3xl" />
+        </section>
+
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3 xl:grid-cols-4">
+          <StatCard
+            title="Tổng đơn hàng"
+            value={isLoading ? "—" : totalOrders}
+            icon={<FiClipboard className="h-6 w-6" />}
+            className="bg-white/80"
+          />
+          <StatCard
+            title="Chờ xác nhận"
+            value={isLoading ? "—" : pendingCount}
+            icon={<FiPackage className="h-6 w-6" />}
+            className="bg-white/80"
+          />
+          <StatCard
+            title="Đang đóng gói"
+            value={isLoading ? "—" : packingCount}
+            icon={<FiPackage className="h-6 w-6" />}
+            className="bg-white/80"
+          />
+          <StatCard
+            title="Đang giao"
+            value={isLoading ? "—" : shippingCount}
+            icon={<FiTruck className="h-6 w-6" />}
+            className="bg-white/80"
+          />
+        </div>
+
         <DataTable
           columns={columns}
           data={data?.items || []}
@@ -233,8 +291,8 @@ export default function ManagerOrdersPage() {
             action={{ label: "Thử lại", onClick: () => refetch() }}
           />
         )}
-      </div>
-    </div>
+      </main>
+    </PageShell>
   );
 }
 

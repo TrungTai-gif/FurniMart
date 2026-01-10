@@ -12,6 +12,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { userService } from "@/services/userService";
 import { toast } from "react-toastify";
 import Link from "next/link";
+import type { AxiosError } from "axios";
 import {
   FiEdit,
   FiMapPin,
@@ -31,16 +32,6 @@ export default function AccountPage() {
     phone: user?.phone || "",
   });
 
-  // Update formData when user changes
-  useEffect(() => {
-    if (user) {
-      setFormData({
-        fullName: user.fullName || user.name || "",
-        phone: user.phone || "",
-      });
-    }
-  }, [user]);
-
   const updateProfileMutation = useMutation({
     mutationFn: (data: typeof formData) => userService.updateProfile(data),
     onSuccess: (updatedUser) => {
@@ -50,7 +41,7 @@ export default function AccountPage() {
       toast.success("Cập nhật thông tin thành công");
       setIsEditing(false);
     },
-    onError: (error: any) => {
+    onError: (error: AxiosError<{ message?: string }>) => {
       console.error("Update profile error:", error);
       toast.error(
         error.response?.data?.message || "Không thể cập nhật thông tin"
@@ -73,6 +64,51 @@ export default function AccountPage() {
     updateProfileMutation.mutate(formData);
   };
 
+  const quickActions = [
+    {
+      title: "Địa chỉ giao hàng",
+      description: "Quản lý địa chỉ nhận hàng",
+      href: routes.customer.addresses,
+      icon: FiMapPin,
+      cta: "Quản lý địa chỉ",
+    },
+    {
+      title: "Ví điện tử",
+      description: "Xem số dư và lịch sử",
+      href: routes.customer.wallet,
+      icon: FiCreditCard,
+      cta: "Xem ví",
+    },
+    {
+      title: "Đánh giá",
+      description: "Theo dõi đánh giá của bạn",
+      href: routes.customer.reviews,
+      icon: FiEdit,
+      cta: "Xem đánh giá",
+    },
+    {
+      title: "Hỗ trợ trực tuyến",
+      description: "Chat với nhân viên hỗ trợ",
+      href: routes.customer.chat,
+      icon: FiMessageSquare,
+      cta: "Mở chat",
+    },
+    {
+      title: "Thanh toán",
+      description: "Xem lịch sử thanh toán",
+      href: routes.customer.payments,
+      icon: FiCreditCard,
+      cta: "Xem thanh toán",
+    },
+    {
+      title: "Yêu cầu hỗ trợ",
+      description: "Đổi trả, bảo hành, lắp ráp",
+      href: routes.customer.disputes,
+      icon: FiAlertCircle,
+      cta: "Tạo yêu cầu",
+    },
+  ];
+
   return (
     <PageShell>
       <PageHeader
@@ -82,8 +118,55 @@ export default function AccountPage() {
           { label: "Tài khoản" },
         ]}
       />
-      <main className="space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+      <main className="space-y-8">
+        <Card variant="outline" className="overflow-hidden">
+          <div className="bg-gradient-to-r from-primary-600 via-primary-500 to-primary-400 px-6 py-5 text-white">
+            <p className="text-sm text-white/80">Trung tâm tài khoản</p>
+            <h2 className="text-2xl font-semibold">
+              Xin chào, {user.fullName || user.name}
+            </h2>
+          </div>
+          <CardContent className="p-6">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                <div className="h-16 w-16 rounded-full bg-primary-50 text-primary-700 flex items-center justify-center text-xl font-semibold">
+                  {(user.fullName || user.name || "U").charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <p className="text-lg font-semibold text-secondary-900">
+                    {user.fullName || user.name}
+                  </p>
+                  <p className="text-sm text-secondary-500">{user.email}</p>
+                  {user.phone && (
+                    <p className="text-sm text-secondary-500">{user.phone}</p>
+                  )}
+                  <p className="text-xs uppercase tracking-wide text-secondary-400 mt-1">
+                    {user.role}
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  if (isEditing) {
+                    setIsEditing(false);
+                    setFormData({
+                      fullName: user?.fullName || user?.name || "",
+                      phone: user?.phone || "",
+                    });
+                  } else {
+                    setIsEditing(true);
+                  }
+                }}
+              >
+                <FiEdit className="w-4 h-4 mr-2" />
+                {isEditing ? "Hủy chỉnh sửa" : "Chỉnh sửa thông tin"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_2fr] gap-6 lg:gap-8">
           <Card variant="outline">
             <CardHeader>
               <CardTitle className="text-lg font-semibold">
@@ -134,7 +217,7 @@ export default function AccountPage() {
                   </div>
                 </form>
               ) : (
-                <>
+                <div className="space-y-4">
                   <div>
                     <p className="text-sm text-secondary-500 mb-1">Họ và tên</p>
                     <p className="font-medium text-secondary-900">
@@ -163,130 +246,52 @@ export default function AccountPage() {
                       {user.role}
                     </p>
                   </div>
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsEditing(true)}
-                    className="w-full mt-4"
-                  >
-                    <FiEdit className="w-4 h-4 mr-2" />
-                    Chỉnh sửa thông tin
-                  </Button>
-                </>
+                </div>
               )}
             </CardContent>
           </Card>
 
-          <div className="lg:col-span-2 space-y-6">
-            <Card variant="outline">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold">Địa chỉ</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-secondary-600 mb-4">
-                  Quản lý địa chỉ giao hàng
-                </p>
-                <Link href={routes.customer.addresses}>
-                  <Button variant="outline">
-                    <FiMapPin className="w-4 h-4 mr-2" />
-                    Quản lý địa chỉ
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-
-            <Card variant="outline">
-              <CardHeader>
-                <CardTitle>Ví điện tử</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-secondary-600 mb-4">
-                  Xem số dư và lịch sử giao dịch
-                </p>
-                <Link href={routes.customer.wallet}>
-                  <Button variant="outline">
-                    <FiCreditCard className="w-4 h-4 mr-2" />
-                    Xem ví
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-
-            <Card variant="outline">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold">
-                  Đánh giá
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-secondary-600 mb-4">
-                  Xem và quản lý đánh giá của bạn
-                </p>
-                <Link href={routes.customer.reviews}>
-                  <Button variant="outline">
-                    <FiEdit className="w-4 h-4 mr-2" />
-                    Xem đánh giá
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-
-            <Card variant="outline">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold">
-                  Hỗ trợ khách hàng
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-secondary-600 mb-4">
-                  Chat với nhân viên hỗ trợ
-                </p>
-                <Link href={routes.customer.chat}>
-                  <Button variant="outline">
-                    <FiMessageSquare className="w-4 h-4 mr-2" />
-                    Mở chat
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-
-            <Card variant="outline">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold">
-                  Lịch sử thanh toán
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-secondary-600 mb-4">
-                  Xem lịch sử thanh toán
-                </p>
-                <Link href={routes.customer.payments}>
-                  <Button variant="outline">
-                    <FiCreditCard className="w-4 h-4 mr-2" />
-                    Xem thanh toán
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-
-            <Card variant="outline">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold">
-                  Yêu cầu hỗ trợ
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-secondary-600 mb-4">
-                  Đổi trả, bảo hành, lắp ráp
-                </p>
-                <Link href={routes.customer.disputes}>
-                  <Button variant="outline">
-                    <FiAlertCircle className="w-4 h-4 mr-2" />
-                    Tạo yêu cầu
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          </div>
+          <Card variant="outline">
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold">
+                Tiện ích nhanh
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {quickActions.map((action) => {
+                  const Icon = action.icon;
+                  return (
+                    <div
+                      key={action.title}
+                      className="flex flex-col justify-between rounded-xl border border-secondary-100 bg-secondary-50/60 p-4 transition hover:border-primary-200 hover:bg-white"
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3">
+                          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-50 text-primary-600">
+                            <Icon className="h-5 w-5" />
+                          </span>
+                          <div>
+                            <p className="font-semibold text-secondary-900">
+                              {action.title}
+                            </p>
+                            <p className="text-sm text-secondary-500">
+                              {action.description}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <Link href={action.href} className="mt-4">
+                        <Button variant="outline" className="w-full">
+                          {action.cta}
+                        </Button>
+                      </Link>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </main>
     </PageShell>

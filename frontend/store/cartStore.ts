@@ -66,6 +66,10 @@ export const useCartStore = create<CartState>()(
               ),
             };
           });
+          const updatedItems = get().items;
+          syncCartToBackend(updatedItems).catch((err) =>
+            console.error("Failed to sync cart after add:", err)
+          );
         }
       },
       removeItem: (itemId) => {

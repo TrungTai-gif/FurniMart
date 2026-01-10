@@ -12,11 +12,11 @@ interface OrderItemsTableProps {
 
 export default function OrderItemsTable({ items, showImage = true }: OrderItemsTableProps) {
   // Filter valid items - must have quantity and price at minimum
-  const validItems = items?.filter(item => 
-    item && 
-    typeof item.quantity === 'number' && 
+  const validItems = items?.filter(item =>
+    item &&
+    typeof item.quantity === 'number' &&
     typeof item.price === 'number' &&
-    (item.productId || item.product || item.productName || (item.product as any)?.name)
+    (item.productId || item.product || item.productName)
   ) || [];
 
   if (!items || items.length === 0 || validItems.length === 0) {
@@ -62,8 +62,8 @@ export default function OrderItemsTable({ items, showImage = true }: OrderItemsT
                   <p className="font-medium text-secondary-900">{item.product?.name || item.productName || "N/A"}</p>
                   {item.product?.category && (
                     <p className="text-xs text-secondary-500 mt-1">
-                      {typeof item.product.category === "string" 
-                        ? item.product.category 
+                      {typeof item.product.category === "string"
+                        ? item.product.category
                         : (item.product.category && typeof item.product.category === "object" && "name" in item.product.category)
                           ? (item.product.category as { name: string }).name
                           : "N/A"}

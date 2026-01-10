@@ -1,9 +1,12 @@
+"use client";
+
 import { useState, forwardRef } from "react";
+import type { ComponentProps } from "react";
 import Input from "./Input";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { cn } from "@/lib/utils";
 
-interface PasswordInputProps extends React.ComponentProps<typeof Input> { }
+type PasswordInputProps = ComponentProps<typeof Input>;
 
 const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
     ({ className, ...props }, ref) => {

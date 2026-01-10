@@ -51,7 +51,7 @@ export default function ProductCard({
         productId: product.id,
         product,
         quantity: 1,
-        price: product.price,
+        price: discountedPrice,
       });
       await cartService.addToCart(product.id, 1);
       toast.success("Đã thêm vào giỏ hàng");
@@ -66,13 +66,16 @@ export default function ProductCard({
   );
   const hasMultipleImages = images.length > 1;
 
-  // Calculate discount percentage
-  const discountPercent =
-    product.discount && product.discount > 0
-      ? Math.round(
-          (product.discount / (product.price + product.discount)) * 100
-        )
-      : 0;
+  const hasDiscount = Boolean(
+    product.discount && product.discount > 0 && product.price > 0
+  );
+  const discountedPrice = hasDiscount
+    ? Math.max(product.price - (product.discount || 0), 0)
+    : product.price;
+  // Calculate discount percentage based on original price
+  const discountPercent = hasDiscount
+    ? Math.round(((product.discount || 0) / product.price) * 100)
+    : 0;
 
   return (
     <Link
@@ -95,10 +98,10 @@ export default function ProductCard({
     >
       <div
         className={cn(
-          "bg-white rounded-lg overflow-hidden h-full flex flex-col",
+          "bg-white rounded-2xl overflow-hidden h-full flex flex-col",
           "transition-all duration-300 ease-out",
-          "hover:shadow-medium hover:-translate-y-1", // Lift effect
-          "border border-transparent hover:border-secondary-100", // Subtle border on hover
+          "hover:shadow-xl hover:-translate-y-1.5",
+          "border border-secondary-100/80 hover:border-primary-200",
           "animate-fade-in"
         )}
       >
@@ -111,7 +114,7 @@ export default function ProductCard({
               fill
               className={cn(
                 "object-cover transition-transform duration-500 ease-out",
-                isHovered ? "scale-110" : "scale-100"
+                isHovered ? "scale-105" : "scale-100"
               )}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               onError={() => {
@@ -119,8 +122,9 @@ export default function ProductCard({
               }}
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-secondary-400 bg-secondary-100">
-              <span className="text-sm font-medium">No Image</span>
+            <div className="w-full h-full flex flex-col items-center justify-center text-secondary-400 bg-secondary-100">
+              <span className="text-sm font-medium">Chưa có ảnh</span>
+              <span className="text-xs text-secondary-300">FurniMart</span>
             </div>
           )}
 
@@ -128,7 +132,7 @@ export default function ProductCard({
           {showActions && (
             <div
               className={cn(
-                "absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/50 to-transparent",
+                "absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/60 to-transparent",
                 "translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out",
                 "flex gap-2 justify-center opacity-0 group-hover:opacity-100"
               )}
@@ -136,7 +140,7 @@ export default function ProductCard({
               <Button
                 variant="primary"
                 size="sm"
-                className="w-full shadow-lg"
+                className="w-full shadow-lg rounded-full"
                 onClick={handleAddToCart}
               >
                 <FiShoppingCart className="mr-2" /> Thêm vào giỏ
@@ -149,7 +153,7 @@ export default function ProductCard({
             {discountPercent > 0 && (
               <Badge
                 variant="danger"
-                className="bg-error text-white font-bold shadow-sm"
+                className="bg-error text-white font-bold shadow-sm rounded-full px-3 py-1 text-xs"
               >
                 -{discountPercent}%
               </Badge>
@@ -157,17 +161,27 @@ export default function ProductCard({
             {product.isFeatured && (
               <Badge
                 variant="success"
-                className="bg-accent-500 text-white font-semibold shadow-sm"
+                className="bg-accent-500 text-white font-semibold shadow-sm rounded-full px-3 py-1 text-xs"
               >
                 HOT
               </Badge>
             )}
           </div>
+
+          {showActions && (
+            <button
+              type="button"
+              className="absolute top-3 right-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-secondary-600 shadow-sm transition hover:text-primary-600 hover:bg-white"
+              aria-label="Yêu thích"
+            >
+              <FiHeart className="h-4 w-4" />
+            </button>
+          )}
         </div>
 
         {/* Content */}
-        <div className="p-4 flex-1 flex flex-col">
-          <div className="mb-2">
+        <div className="p-5 flex-1 flex flex-col">
+          <div className="mb-3">
             {product.category && typeof product.category === "object" && (
               <p className="text-xs text-secondary-500 mb-1 font-medium tracking-wide uppercase">
                 {product.category.name}
@@ -175,7 +189,7 @@ export default function ProductCard({
             )}
             <h3
               className={cn(
-                "font-medium text-secondary-900 text-base leading-snug line-clamp-2",
+                "font-semibold text-secondary-900 text-base leading-snug line-clamp-2",
                 "group-hover:text-primary-700 transition-colors duration-200"
               )}
             >
@@ -184,13 +198,13 @@ export default function ProductCard({
           </div>
 
           <div className="mt-auto">
-            <div className="flex items-baseline gap-2 mb-2">
+            <div className="flex items-baseline gap-2 mb-3">
               <span className="text-lg font-bold text-secondary-900">
-                {formatCurrency(product.price)}
+                {formatCurrency(discountedPrice)}
               </span>
-              {product.discount && product.discount > 0 && (
+              {hasDiscount && (
                 <span className="text-sm text-secondary-400 line-through">
-                  {formatCurrency(product.price + product.discount)}
+                  {formatCurrency(product.price)}
                 </span>
               )}
             </div>
@@ -198,7 +212,7 @@ export default function ProductCard({
             {/* Rating & Colors */}
             <div className="flex items-center justify-between">
               {product.rating ? (
-                <div className="flex items-center gap-1 text-sm text-secondary-600">
+                <div className="flex items-center gap-1 rounded-full bg-secondary-50 px-2.5 py-1 text-sm text-secondary-600">
                   <span className="text-accent-500">★</span>
                   <span className="font-medium">
                     {product.rating.toFixed(1)}

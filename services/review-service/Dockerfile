@@ -1,4 +1,4 @@
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
@@ -13,6 +13,8 @@ COPY shared/package*.json ./shared/
 COPY shared/tsconfig.json ./shared/
 COPY shared/index.ts ./shared/
 COPY shared/common ./shared/common
+COPY shared/config ./shared/config
+COPY shared/dtos ./shared/dtos
 COPY shared/types ./shared/types
 
 # Install shared dependencies and build
@@ -42,7 +44,7 @@ RUN mkdir -p /shared && cp -r /app/shared/dist /shared/dist
 # Build review-service
 RUN npm run build
 
-FROM node:20-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 
