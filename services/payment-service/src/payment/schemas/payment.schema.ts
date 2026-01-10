@@ -17,7 +17,12 @@ export class Payment {
   @Prop({ required: true, enum: ['vnpay'], default: 'vnpay' })
   method!: string;
 
-  @Prop({ enum: ['pending', 'processing', 'completed', 'failed', 'cancelled'], default: 'pending' })
+  // Payment status: matches shared/types/entities.ts Payment interface
+  // Supports both lowercase (legacy) and uppercase (standard) values
+  @Prop({ 
+    enum: ['pending', 'paid', 'failed', 'refunded', 'UNPAID', 'PAID', 'REFUND_PENDING', 'REFUNDED', 'FAILED', 'processing', 'completed', 'cancelled'], 
+    default: 'pending' 
+  })
   status!: string;
 
   @Prop()

@@ -11,7 +11,7 @@ import { AppController } from './app.controller';
       envFilePath: '.env',
     }),
     MongooseModule.forRoot(
-      process.env.MONGODB_URI || 'mongodb://localhost:27017/furnimart',
+      process.env.MONGODB_URI || 'mongodb://admin:admin123@mongodb:27017/furnimart?authSource=admin',
       {
         serverSelectionTimeoutMS: 5000,
       },

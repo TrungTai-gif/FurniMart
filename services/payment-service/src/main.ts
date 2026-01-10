@@ -1,19 +1,65 @@
-import { Controller, Get } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { NestFactory } from '@nestjs/core';
+import { ValidationPipe } from '@nestjs/common';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { HttpExceptionFilter } from '@shared/common/exceptions/http-exception.filter';
+import { ResponseInterceptor } from '@shared/common/interceptors/response.interceptor';
+import { AppModule } from './app.module';
 
-@ApiTags('Health')
-@Controller()
-export class AppController {
-  @Get()
-  @ApiOperation({ summary: 'Root endpoint' })
-  getRoot() {
-    return { message: 'Payment Service is running' };
-  }
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule, {
+    logger: ['error', 'warn', 'log'],
+  });
 
-  @Get('health')
-  @ApiOperation({ summary: 'Health check endpoint' })
-  getHealth() {
-    return { status: 'ok', service: 'payment-service', timestamp: new Date().toISOString() };
+  app.setGlobalPrefix('api');
+
+  // Enable CORS
+  app.enableCors({
+    origin: true,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  });
+
+  // Global Pipes
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: false, // Allow extra fields that might be sent from frontend
+      transform: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
+      skipMissingProperties: false,
+      skipNullProperties: false,
+      skipUndefinedProperties: false,
+    }),
+  );
+
+  // Global Filters & Interceptors
+  app.useGlobalFilters(new HttpExceptionFilter());
+  app.useGlobalInterceptors(new ResponseInterceptor());
+
+  // Swagger Documentation
+  const config = new DocumentBuilder()
+    .setTitle('FurniMart Payment Service')
+    .setDescription('Payment Gateway Integration Service')
+    .setVersion('1.0.0')
+    .addBearerAuth()
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document);
+
+  const PORT = process.env.PORT || 3015;
+  await app.listen(PORT);
+
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`🚀 Payment Service running on http://localhost:${PORT}/api`);
   }
 }
+
+bootstrap().catch((err: Error) => {
+  console.error('❌ Failed to start Payment Service:', err);
+  process.exit(1);
+});
 

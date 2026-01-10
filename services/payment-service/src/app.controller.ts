@@ -13,7 +13,13 @@ export class AppController {
   @Get('health')
   @ApiOperation({ summary: 'Health check endpoint' })
   getHealth() {
-    return { status: 'ok', service: 'payment-service', timestamp: new Date().toISOString() };
+    return {
+      status: 'UP',
+      service: 'payment-service',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      environment: process.env.NODE_ENV || 'development',
+    };
   }
 }
 
