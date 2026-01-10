@@ -94,11 +94,3 @@ export async function seedOrders() {
         }
     ];
 
-    const results = [];
-    for (const o of ordersData) {
-        const order = await Order.create(o);
-        results.push(order);
-    }
-    console.log(`✅ Seeded ${results.length} orders.`);
-    return results;
-}
