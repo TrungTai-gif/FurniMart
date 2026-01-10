@@ -93,4 +93,12 @@ export async function seedOrders() {
             createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
         }
     ];
-
+    
+    const results = [];
+    for (const o of ordersData) {
+        const order = await Order.create(o);
+        results.push(order);
+    }
+    console.log(`✅ Seeded ${results.length} orders.`);
+    return results;
+}
