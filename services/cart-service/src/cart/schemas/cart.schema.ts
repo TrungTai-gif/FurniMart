@@ -15,7 +15,7 @@ export class CartItem {
   branchId?: string; // Branch where product is available
 
   @Prop()
-  price?: number;  // Snapshot price at time of adding
+  price?: number; // Snapshot price at time of adding
 
   @Prop()
   productName?: string; // Snapshot for display
