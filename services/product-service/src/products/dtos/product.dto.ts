@@ -41,7 +41,7 @@ export class CreateProductDto {
   @IsOptional()
   @IsNumber()
   @Min(0)
-  stock?: number;
+  stock?: number; // Optional - Admin không nên set stock (stock là per-branch)
 
   @IsString()
   categoryId!: string;

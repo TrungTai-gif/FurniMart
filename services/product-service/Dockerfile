@@ -5,8 +5,8 @@ WORKDIR /app
 # Configure npm for better network handling
 RUN npm config set fetch-timeout 300000 && \
     npm config set fetch-retries 5 && \
-    npm config set fetch-retry-minconditionout 20000 && \
-    npm config set fetch-retry-maxconditionout 120000
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000
 
 # Copy shared package files
 COPY shared/package*.json ./shared/
@@ -37,7 +37,8 @@ RUN npm install ./shared.tgz --no-save
 # Copy product-service source
 COPY services/product-service ./
 
-# Copy shared dist to match tsconfig path alias
+# Copy shared dist to match tsconfig path alias (../../shared/dist from service perspective)
+# From /app, ../../shared/dist = /shared/dist
 RUN mkdir -p /shared && cp -r /app/shared/dist /shared/dist
 
 # Build product-service
@@ -50,8 +51,8 @@ WORKDIR /app
 # Configure npm for better network handling
 RUN npm config set fetch-timeout 300000 && \
     npm config set fetch-retries 5 && \
-    npm config set fetch-retry-minout 20000 && \
-    npm config set fetch-retry-maxout 120000
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000
 
 # Copy package files
 COPY services/product-service/package*.json ./
@@ -62,11 +63,11 @@ RUN for i in 1 2 3 4 5; do \
       (echo "Attempt $i failed, retrying in 10 seconds..." && sleep 10); \
     done
 
-# Copy and install shared package
+# Copy and install shared package (with dependencies)
 COPY --from=builder /app/shared.tgz ./
 RUN npm install ./shared.tgz --no-save
 
-# Create symlink for shared dist
+# Create symlink for shared dist (code compiled with ../../shared/dist path)
 RUN mkdir -p /shared && ln -s /app/node_modules/@furnimart/shared/dist /shared/dist
 
 # Copy built application

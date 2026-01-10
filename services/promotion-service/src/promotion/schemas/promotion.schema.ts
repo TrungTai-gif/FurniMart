@@ -55,3 +55,4 @@ export class Promotion {
 }
 
 export const PromotionSchema = SchemaFactory.createForClass(Promotion);
+

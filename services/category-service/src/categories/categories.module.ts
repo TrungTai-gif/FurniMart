@@ -15,3 +15,4 @@ import { AuthModule } from '@shared/common/auth/auth.module';
   exports: [CategoriesService],
 })
 export class CategoriesModule {}
+

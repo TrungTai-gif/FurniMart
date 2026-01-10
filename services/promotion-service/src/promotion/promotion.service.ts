@@ -11,6 +11,7 @@ export class PromotionService {
   ) {}
 
   async create(createPromotionDto: CreatePromotionDto): Promise<Promotion> {
+    // Generate code if not provided and code is required
     if (createPromotionDto.isCodeRequired && !createPromotionDto.code) {
       createPromotionDto.code = this.generatePromoCode();
     }
@@ -29,7 +30,7 @@ export class PromotionService {
 
   async findAll(filters?: any): Promise<Promotion[]> {
     const query: any = {};
-
+    
     if (filters?.isActive !== undefined) {
       query.isActive = filters.isActive === 'true';
     }
@@ -38,6 +39,7 @@ export class PromotionService {
       query.type = filters.type;
     }
 
+    // Only return active promotions that are currently valid
     if (filters?.activeOnly === 'true') {
       const now = new Date();
       query.isActive = true;
@@ -62,7 +64,7 @@ export class PromotionService {
 
   async update(id: string, updatePromotionDto: UpdatePromotionDto): Promise<Promotion> {
     const promotion = await this.findById(id);
-
+    
     if (updatePromotionDto.startDate) {
       updatePromotionDto.startDate = new Date(updatePromotionDto.startDate) as any;
     }
@@ -96,6 +98,7 @@ export class PromotionService {
       throw new BadRequestException('Promotion code or ID is required');
     }
 
+    // Check if promotion is valid
     const now = new Date();
     if (!promotion.isActive) {
       throw new BadRequestException('Promotion is not active');
@@ -105,18 +108,22 @@ export class PromotionService {
       throw new BadRequestException('Promotion is not valid at this time');
     }
 
+    // Check usage limit
     if (promotion.usageLimit && promotion.usageCount >= promotion.usageLimit) {
       throw new BadRequestException('Promotion usage limit reached');
     }
 
+    // Check if user already used this promotion
     if (promotion.usedBy.includes(userId)) {
       throw new BadRequestException('You have already used this promotion');
     }
 
+    // Check minimum purchase amount
     if (promotion.minPurchaseAmount && applyDto.totalAmount < promotion.minPurchaseAmount) {
       throw new BadRequestException(`Minimum purchase amount is ${promotion.minPurchaseAmount}`);
     }
 
+    // Calculate discount
     let discount = 0;
     if (promotion.type === 'percentage') {
       discount = (applyDto.totalAmount * promotion.value) / 100;
@@ -126,9 +133,10 @@ export class PromotionService {
     } else if (promotion.type === 'fixed') {
       discount = promotion.value;
     } else if (promotion.type === 'free_shipping') {
-      discount = 0;
+      discount = 0; // Free shipping is handled separately
     }
 
+    // Check if products/categories are applicable
     if (promotion.applicableProducts.length > 0 || promotion.applicableCategories.length > 0) {
       const applicableItems = applyDto.items.filter((item: any) => {
         if (promotion.applicableProducts.includes(item.productId)) {
@@ -156,7 +164,7 @@ export class PromotionService {
 
   async usePromotion(promotionId: string, userId: string): Promise<void> {
     const promotion = await this.findById(promotionId);
-
+    
     if (!promotion.usedBy.includes(userId)) {
       await this.promotionModel.findByIdAndUpdate(promotionId, {
         $push: { usedBy: userId },
@@ -174,3 +182,4 @@ export class PromotionService {
     return code;
   }
 }
+

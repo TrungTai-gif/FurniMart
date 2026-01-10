@@ -116,3 +116,4 @@ export class ApplyPromotionDto {
   @Min(0)
   totalAmount!: number;
 }
+

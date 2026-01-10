@@ -1,30 +1,30 @@
-import { NestFactory } from "@nestjs/core";
-import { ValidationPipe } from "@nestjs/common";
-import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
-import { HttpExceptionFilter } from "@shared/common/exceptions/http-exception.filter";
-import { ResponseInterceptor } from "@shared/common/interceptors/response.interceptor";
-import { AppModule } from "./app.module";
+import { NestFactory } from '@nestjs/core';
+import { ValidationPipe } from '@nestjs/common';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { HttpExceptionFilter } from '@shared/common/exceptions/http-exception.filter';
+import { ResponseInterceptor } from '@shared/common/interceptors/response.interceptor';
+import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
-    logger: ["error", "warn", "log"],
+    logger: ['error', 'warn', 'log'],
   });
 
-  app.setGlobalPrefix("api");
+  app.setGlobalPrefix('api');
 
   // Enable CORS
   app.enableCors({
     origin: true,
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "Accept"],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   });
 
   // Global Pipes
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
-      forbidNonWhitelisted: false,
+      forbidNonWhitelisted: false, // Allow extra fields that might be sent from frontend
       transform: true,
       transformOptions: {
         enableImplicitConversion: true,
@@ -32,7 +32,7 @@ async function bootstrap() {
       skipMissingProperties: false,
       skipNullProperties: false,
       skipUndefinedProperties: false,
-    })
+    }),
   );
 
   // Global Filters & Interceptors
@@ -41,19 +41,19 @@ async function bootstrap() {
 
   // Swagger Documentation
   const config = new DocumentBuilder()
-    .setTitle("FurniMart Category Service")
-    .setDescription("Category Service")
-    .setVersion("1.0.0")
+    .setTitle('FurniMart Category Service')
+    .setDescription('Category Service')
+    .setVersion('1.0.0')
     .addBearerAuth()
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup("api/docs", app, document);
+  SwaggerModule.setup('api/docs', app, document);
 
   const PORT = process.env.PORT || 3013;
   await app.listen(PORT);
 
-  if (process.env.NODE_ENV !== "production") {
+  if (process.env.NODE_ENV !== 'production') {
     console.log(`🚀 Category Service running on http://localhost:${PORT}/api`);
   }
 }

@@ -72,11 +72,14 @@ export class PromotionController {
     @Req() req: Request,
     @Body() applyDto: ApplyPromotionDto,
   ) {
+    // Extract userId from request.user if authenticated, otherwise use empty string
     const userId = (req as any).user?.userId || '';
     const result = await this.promotionService.applyPromotion(userId, applyDto);
+    // Mark promotion as used only if user is authenticated
     if (result.promotionId && userId) {
       await this.promotionService.usePromotion(result.promotionId, userId);
     }
     return result;
   }
 }
+
