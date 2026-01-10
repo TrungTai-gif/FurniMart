@@ -1,4 +1,5 @@
 import { Controller, Get, UseGuards, Query } from '@nestjs/common';
+import { Role } from '@shared/config/rbac-matrix';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { DashboardService } from './dashboard.service';
@@ -13,7 +14,7 @@ export class DashboardController {
   constructor(private dashboardService: DashboardService) {}
 
   @Get('stats')
-  @Roles('admin', 'branch_manager')
+  @Roles(Role.ADMIN, Role.BRANCH_MANAGER)
   @UseGuards(RolesGuard)
   @ApiOperation({ summary: 'Lấy thống kê chung' })
   async getStats(@Query('branchId') branchId?: string) {
@@ -24,7 +25,7 @@ export class DashboardController {
   }
 
   @Get('orders-stats')
-  @Roles('admin', 'branch_manager')
+  @Roles(Role.ADMIN, Role.BRANCH_MANAGER)
   @UseGuards(RolesGuard)
   @ApiOperation({ summary: 'Lấy thống kê đơn hàng' })
   async getOrderStats(@Query('days') days?: string) {
@@ -40,16 +41,15 @@ export class DashboardController {
   }
 
   @Get('orders-by-status')
-  @Roles('admin', 'branch_manager')
+  @Roles(Role.ADMIN, Role.BRANCH_MANAGER)
   @UseGuards(RolesGuard)
   @ApiOperation({ summary: 'Lấy đơn hàng theo trạng thái' })
   async getOrdersByStatus() {
     return this.dashboardService.getOrdersByStatus();
   }
 
-  
   @Get('revenue-chart')
-  @Roles('admin', 'branch_manager')
+  @Roles(Role.ADMIN, Role.BRANCH_MANAGER)
   @UseGuards(RolesGuard)
   @ApiOperation({ summary: 'Lấy dữ liệu biểu đồ doanh thu' })
   async getRevenueChart(@Query('days') days?: string) {
@@ -57,9 +57,8 @@ export class DashboardController {
     return this.dashboardService.getRevenueChart(parsedDays);
   }
 
-
   @Get('category-stats')
-  @Roles('admin', 'branch_manager')
+  @Roles(Role.ADMIN, Role.BRANCH_MANAGER)
   @UseGuards(RolesGuard)
   @ApiOperation({ summary: 'Lấy thống kê theo danh mục' })
   async getCategoryStats() {

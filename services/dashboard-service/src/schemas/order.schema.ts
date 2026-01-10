@@ -14,6 +14,9 @@ export class Order {
   @Prop({ default: false })
   isPaid!: boolean;
 
+  @Prop({ type: MongooseSchema.Types.ObjectId })
+  branchId?: string;
+
   @Prop({ default: 'pending', enum: ['pending', 'confirmed', 'processing', 'shipping', 'delivered', 'cancelled'] })
   status!: string;
 
