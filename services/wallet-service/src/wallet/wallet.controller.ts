@@ -23,6 +23,11 @@ export class WalletController {
     return this.walletService.createWallet(createWalletDto);
   }
 
+  @Get('my-wallet')
+  @ApiOperation({ summary: 'Lấy thông tin ví của tôi' })
+  async getMyWallet(@CurrentUser('userId') userId: string) {
+    return this.walletService.getWallet(userId);
+  }
 
   @Get('transactions')
   @ApiOperation({ summary: 'Lấy lịch sử giao dịch của tôi' })
@@ -36,6 +41,13 @@ export class WalletController {
     return this.walletService.deposit(userId, depositDto);
   }
 
+  @Post('deposit/vnpay')
+  @ApiOperation({ summary: 'Nạp tiền vào ví qua VNPAY (tạo payment URL)' })
+  async depositVnpay(
+    @Req() req: any,
+    @CurrentUser('userId') userId: string,
+    @Body() depositDto: DepositDto,
+  ) {
     // Create deposit transaction first
     const transaction = await this.walletService.deposit(userId, depositDto) as WalletTransactionDocument;
 
@@ -49,7 +61,16 @@ export class WalletController {
         '127.0.0.1';
       
       // Xử lý IPv6 mapped IPv4
-
+      if (typeof ipAddr === 'string' && ipAddr.startsWith('::ffff:')) {
+        ipAddr = ipAddr.substring(7);
+      }
+      if (Array.isArray(ipAddr)) {
+        ipAddr = ipAddr[0];
+        if (ipAddr && ipAddr.startsWith('::ffff:')) {
+          ipAddr = ipAddr.substring(7);
+        }
+      }
+    }
 
     // Create VNPAY payment URL
     const paymentUrl = await this.walletService.createDepositVnpayUrl(
