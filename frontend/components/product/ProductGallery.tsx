@@ -14,40 +14,26 @@ interface ProductGalleryProps {
   productName?: string;
 }
 
-export default function ProductGallery({
-  images = [],
-  modelUrl,
+interface GalleryContentProps {
+  normalizedImages: string[];
+  selectedImage: string;
+  productName?: string;
+  onSelectImage: (image: string) => void;
+  onZoom: () => void;
+}
+
+function GalleryContent({
+  normalizedImages,
+  selectedImage,
   productName,
-}: ProductGalleryProps) {
-  // Normalize all image URLs
-  const normalizedImages = images.map((img) => normalizeImageUrl(img) || img);
-  const [selectedImage, setSelectedImage] = useState(normalizedImages[0] || "");
-  const [zoomOpen, setZoomOpen] = useState(false);
-
-  if (images.length === 0 && !modelUrl) {
-    return (
-      <div className="aspect-[4/3] bg-secondary-50 rounded-2xl flex items-center justify-center border border-secondary-100">
-        <div className="text-center text-secondary-400">
-          <FiBox className="w-12 h-12 mx-auto mb-2 opacity-50" />
-          <span className="text-sm font-medium">No Image Available</span>
-        </div>
-      </div>
-    );
-  }
-
-  const has3D = !!modelUrl;
-  const tabs = has3D
-    ? [
-        { id: "images", label: "Hình ảnh" },
-        { id: "3d", label: "Xem 3D" },
-      ]
-    : [];
-
-  const GalleryContent = () => (
+  onSelectImage,
+  onZoom,
+}: GalleryContentProps) {
+  return (
     <div className="space-y-4">
       <div
         className="relative aspect-[4/5] bg-secondary-50 rounded-2xl overflow-hidden group cursor-zoom-in border border-secondary-100 shadow-sm"
-        onClick={() => setZoomOpen(true)}
+        onClick={onZoom}
       >
         {selectedImage ? (
           <>
@@ -75,8 +61,8 @@ export default function ProductGallery({
         <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
           {normalizedImages.map((img, idx) => (
             <button
-              key={idx}
-              onClick={() => setSelectedImage(img)}
+              key={img || idx}
+              onClick={() => onSelectImage(img)}
               className={cn(
                 "relative aspect-square rounded-xl overflow-hidden border-2 transition-all duration-200",
                 selectedImage === img
@@ -97,6 +83,40 @@ export default function ProductGallery({
       )}
     </div>
   );
+}
+
+export default function ProductGallery({
+  images = [],
+  modelUrl,
+  productName,
+}: ProductGalleryProps) {
+  // Normalize all image URLs
+  const normalizedImages = images.map((img) => normalizeImageUrl(img) || img);
+  const [selectedImage, setSelectedImage] = useState(normalizedImages[0] || "");
+  const [zoomOpen, setZoomOpen] = useState(false);
+  const activeImage =
+    normalizedImages.find((img) => img === selectedImage) ||
+    normalizedImages[0] ||
+    "";
+
+  if (images.length === 0 && !modelUrl) {
+    return (
+      <div className="aspect-[4/3] bg-secondary-50 rounded-2xl flex items-center justify-center border border-secondary-100">
+        <div className="text-center text-secondary-400">
+          <FiBox className="w-12 h-12 mx-auto mb-2 opacity-50" />
+          <span className="text-sm font-medium">No Image Available</span>
+        </div>
+      </div>
+    );
+  }
+
+  const has3D = !!modelUrl;
+  const tabs = has3D
+    ? [
+        { id: "images", label: "Hình ảnh" },
+        { id: "3d", label: "Xem 3D" },
+      ]
+    : [];
 
   return (
     <div className="w-full">
@@ -104,7 +124,15 @@ export default function ProductGallery({
         <TabsControlled tabs={tabs} defaultTab="images">
           {(activeTab) => (
             <>
-              {activeTab === "images" && <GalleryContent />}
+              {activeTab === "images" && (
+                <GalleryContent
+                  normalizedImages={normalizedImages}
+                  selectedImage={activeImage}
+                  productName={productName}
+                  onSelectImage={setSelectedImage}
+                  onZoom={() => setZoomOpen(true)}
+                />
+              )}
               {activeTab === "3d" && modelUrl && (
                 <div className="aspect-[4/3] bg-secondary-50 rounded-2xl overflow-hidden border border-secondary-100">
                   <Product3DViewer modelUrl={modelUrl} />
@@ -114,11 +142,17 @@ export default function ProductGallery({
           )}
         </TabsControlled>
       ) : (
-        <GalleryContent />
+        <GalleryContent
+          normalizedImages={normalizedImages}
+          selectedImage={activeImage}
+          productName={productName}
+          onSelectImage={setSelectedImage}
+          onZoom={() => setZoomOpen(true)}
+        />
       )}
 
       {/* Zoom Modal - Full Screen */}
-      {zoomOpen && selectedImage && (
+      {zoomOpen && activeImage && (
         <div
           className="fixed inset-0 z-[100] bg-white/95 backdrop-blur-md flex items-center justify-center animate-fade-in"
           onClick={() => setZoomOpen(false)}
@@ -131,7 +165,7 @@ export default function ProductGallery({
           </button>
           <div className="relative w-full h-full p-4 md:p-12 flex items-center justify-center">
             <Image
-              src={selectedImage}
+              src={activeImage}
               alt={productName || "Product"}
               width={1600}
               height={1600}

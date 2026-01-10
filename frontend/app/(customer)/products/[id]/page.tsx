@@ -173,7 +173,9 @@ export default function ProductDetailPage() {
     if (
       !inventory ||
       inventory.length === 0 ||
-      inventory[0].quantity < quantity
+      ((inventory[0]?.availableQuantity ??
+        inventory[0]?.quantity ??
+        0) as number) < quantity
     ) {
       toast.error("Chi nhánh này không đủ hàng");
       return;
@@ -190,7 +192,7 @@ export default function ProductDetailPage() {
         product,
         quantity,
         branchId: selectedBranch || undefined,
-        price: product.price,
+        price: discountedPrice,
       });
       await cartService.addToCart(
         product.id,
@@ -219,6 +221,16 @@ export default function ProductDetailPage() {
         }}
       />
     );
+
+  const hasDiscount = Boolean(
+    product.discount && product.discount > 0 && product.price > 0
+  );
+  const discountedPrice = hasDiscount
+    ? Math.max(product.price - (product.discount || 0), 0)
+    : product.price;
+  const discountPercent = hasDiscount
+    ? Math.round(((product.discount || 0) / product.price) * 100)
+    : 0;
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -266,17 +278,12 @@ export default function ProductDetailPage() {
                     Best Seller
                   </Badge>
                 )}
-                {product.discount && product.discount > 0 && (
+                {hasDiscount && (
                   <Badge
                     variant="danger"
                     className="tracking-wider text-[10px] uppercase font-bold px-2 py-0.5"
                   >
-                    -
-                    {Math.round(
-                      (product.discount / (product.price + product.discount)) *
-                        100
-                    )}
-                    %
+                    -{discountPercent}%
                   </Badge>
                 )}
                 {(typeof product.category === "object"
@@ -299,11 +306,11 @@ export default function ProductDetailPage() {
 
               <div className="flex items-baseline gap-4 mb-6">
                 <span className="text-4xl font-bold text-primary-700 tracking-tight">
-                  {formatCurrency(product.price)}
+                  {formatCurrency(discountedPrice)}
                 </span>
-                {product.discount && product.discount > 0 && (
+                {hasDiscount && (
                   <span className="text-xl text-secondary-400 line-through decoration-secondary-300">
-                    {formatCurrency(product.price + product.discount)}
+                    {formatCurrency(product.price)}
                   </span>
                 )}
               </div>
@@ -335,7 +342,18 @@ export default function ProductDetailPage() {
                 )}
 
                 <div className="flex items-center gap-2 text-sm bg-secondary-50 px-3 py-1.5 rounded-full">
-                  {product.status === "active" || product.isActive ? (
+                  {!selectedBranch ? (
+                    <>
+                      <span className="w-2 h-2 rounded-full bg-secondary-400" />
+                      <span className="text-secondary-600 font-medium">
+                        Chọn chi nhánh xem hàng
+                      </span>
+                    </>
+                  ) : inventory &&
+                    inventory.length > 0 &&
+                    ((inventory[0]?.availableQuantity ??
+                      inventory[0]?.quantity ??
+                      0) as number) > 0 ? (
                     <>
                       <FiCheck className="w-4 h-4 text-emerald-600" />
                       <span className="text-emerald-700 font-medium">
@@ -396,9 +414,14 @@ export default function ProductDetailPage() {
                           <>
                             {inventory &&
                             inventory.length > 0 &&
-                            inventory[0].quantity > 0 ? (
+                            (inventory[0]?.availableQuantity ??
+                              inventory[0]?.quantity ??
+                              0) > 0 ? (
                               <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100">
-                                Có sẵn {inventory[0]?.quantity} sp
+                                Có sẵn{" "}
+                                {inventory[0]?.availableQuantity ??
+                                  inventory[0]?.quantity}{" "}
+                                sp
                               </span>
                             ) : (
                               <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-md border border-red-100">
@@ -468,7 +491,7 @@ export default function ProductDetailPage() {
                   </div>
                 </div>
               ) : (
-                <div className="bg-gradient-to-br from-secondary-50 to-white p-6 rounded-2xl text-center border border-secondary-100 shadow-sm relative overflow-hidden">
+                <div className="bg-linear-to-br from-secondary-50 to-white p-6 rounded-2xl text-center border border-secondary-100 shadow-sm relative overflow-hidden">
                   <div className="relative z-10">
                     <p className="text-secondary-900 font-bold mb-1 text-lg">
                       Bạn muốn mua sản phẩm này?
@@ -540,7 +563,7 @@ export default function ProductDetailPage() {
             defaultTab="desc"
           >
             {(activeTab) => (
-              <div className="py-8 bg-white p-8 rounded-2xl shadow-sm border border-secondary-100 min-h-[400px]">
+              <div className="py-8 bg-white p-8 rounded-2xl shadow-sm border border-secondary-100 min-h-100">
                 {activeTab === "desc" && (
                   <div className="prose prose-stone max-w-none text-secondary-600 leading-relaxed marker:text-primary-500">
                     <p>{product.description}</p>

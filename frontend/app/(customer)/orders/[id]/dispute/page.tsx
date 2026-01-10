@@ -14,6 +14,7 @@ import Textarea from "@/components/ui/Textarea";
 import Button from "@/components/ui/Button";
 import { disputeService } from "@/services/disputeService";
 import { FiAlertTriangle } from "react-icons/fi";
+import type { AxiosError } from "axios";
 
 const disputeSchema = z.object({
     reason: z.string().min(1, "Vui lòng chọn lý do"),
@@ -37,7 +38,7 @@ export default function DisputePage() {
             toast.success("Đã gửi yêu cầu khiếu nại");
             router.push(`/orders/${orderId}`);
         },
-        onError: (err: any) => {
+        onError: (err: AxiosError<{ message?: string }>) => {
             toast.error(err?.response?.data?.message || "Lỗi khi gửi yêu cầu");
         }
     });

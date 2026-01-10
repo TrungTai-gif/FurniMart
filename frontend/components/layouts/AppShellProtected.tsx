@@ -26,24 +26,25 @@ export default function AppShellProtected({ children, allowedRoles }: AppShellPr
   const { isAuthenticated, role, user, accessToken } = useAuthStore();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isChecking, setIsChecking] = useState(true);
+  const needsAuthRedirect = !isAuthenticated || !accessToken || !user;
+  const needsRoleRedirect =
+    !needsAuthRedirect && !!allowedRoles && (!role || !allowedRoles.includes(role));
+  const isChecking = needsAuthRedirect || needsRoleRedirect;
 
   useEffect(() => {
     // Check authentication
-    if (!isAuthenticated || !accessToken || !user) {
+    if (needsAuthRedirect) {
       const returnUrl = encodeURIComponent(window.location.pathname);
       router.push(`/auth/login?returnUrl=${returnUrl}`);
       return;
     }
 
     // Check role if specified
-    if (allowedRoles && role && !allowedRoles.includes(role)) {
+    if (needsRoleRedirect) {
       router.push("/");
       return;
     }
-
-    setIsChecking(false);
-  }, [isAuthenticated, accessToken, user, role, allowedRoles, router]);
+  }, [needsAuthRedirect, needsRoleRedirect, router]);
 
   if (isChecking) {
     return (

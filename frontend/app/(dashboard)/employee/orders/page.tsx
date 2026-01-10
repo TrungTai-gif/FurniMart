@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/authStore";
 import { orderService } from "@/services/orderService";
+import PageShell from "@/components/layouts/PageShell";
 import PageHeader from "@/components/layouts/PageHeader";
 import DataTable from "@/components/dashboard/DataTable";
 import FilterBar from "@/components/dashboard/FilterBar";
@@ -12,9 +13,10 @@ import Select from "@/components/ui/Select";
 import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
 import Badge from "@/components/ui/Badge";
+import StatCard from "@/components/dashboard/StatCard";
 import { Order } from "@/lib/types";
 import { formatCurrency } from "@/lib/format";
-import { FiPackage } from "react-icons/fi";
+import { FiBox, FiPackage, FiTruck } from "react-icons/fi";
 import { toast } from "react-toastify";
 import Link from "next/link";
 
@@ -52,6 +54,11 @@ export default function EmployeeOrdersPage() {
     }),
     enabled: !!user?.branchId,
   });
+
+  const totalOrders = data?.total || 0;
+  const pageOrders = data?.items || [];
+  const confirmedCount = pageOrders.filter((order) => order.status.toUpperCase() === "CONFIRMED").length;
+  const readyToShipCount = pageOrders.filter((order) => order.status.toUpperCase() === "READY_TO_SHIP").length;
 
   const updateStatusMutation = useMutation({
     mutationFn: ({ orderId, status }: { orderId: string; status: string }) =>
@@ -151,7 +158,7 @@ export default function EmployeeOrdersPage() {
 
   if (!user?.branchId) {
     return (
-      <div className="space-y-6">
+      <PageShell>
         <PageHeader
           title="Quản lý đơn hàng"
           breadcrumbs={[{ label: "Dashboard", href: "/employee" }, { label: "Đơn hàng" }]}
@@ -160,12 +167,12 @@ export default function EmployeeOrdersPage() {
           title="Bạn chưa được gán cho chi nhánh nào"
           description="Vui lòng liên hệ quản lý chi nhánh"
         />
-      </div>
+      </PageShell>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <PageShell>
       <PageHeader
         title="Quản lý đơn hàng"
         breadcrumbs={[
@@ -173,7 +180,51 @@ export default function EmployeeOrdersPage() {
           { label: "Đơn hàng" },
         ]}
       />
-      <div className="space-y-6">
+      <main className="space-y-6">
+        <section className="relative overflow-hidden rounded-2xl border border-secondary-100 bg-gradient-to-br from-primary-50 via-white to-secondary-50 p-6 md:p-8">
+          <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-sm text-secondary-500">Xử lý đơn hàng</p>
+              <h2 className="mt-2 text-2xl font-semibold text-secondary-900 md:text-3xl">
+                Đóng gói và chuẩn bị đơn để giao cho shipper
+              </h2>
+              <p className="mt-3 text-sm text-secondary-600 md:text-base">
+                Ưu tiên đơn đã xác nhận, cập nhật trạng thái kịp thời.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/employee/inventory" className="inline-flex">
+                <Button size="sm" variant="outline">Kiểm tra kho</Button>
+              </Link>
+              <Link href="/employee/products" className="inline-flex">
+                <Button size="sm">Danh sách sản phẩm</Button>
+              </Link>
+            </div>
+          </div>
+          <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-secondary-200/40 blur-3xl" />
+        </section>
+
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          <StatCard
+            title="Tổng đơn hàng"
+            value={isLoading ? "—" : totalOrders}
+            icon={<FiBox className="h-6 w-6" />}
+            className="bg-white/80"
+          />
+          <StatCard
+            title="Đã xác nhận"
+            value={isLoading ? "—" : confirmedCount}
+            icon={<FiPackage className="h-6 w-6" />}
+            className="bg-white/80"
+          />
+          <StatCard
+            title="Sẵn sàng giao"
+            value={isLoading ? "—" : readyToShipCount}
+            icon={<FiTruck className="h-6 w-6" />}
+            className="bg-white/80"
+          />
+        </div>
+
         <DataTable
           columns={columns}
           data={data?.items || []}
@@ -219,8 +270,8 @@ export default function EmployeeOrdersPage() {
             action={{ label: "Thử lại", onClick: () => refetch() }}
           />
         )}
-      </div>
-    </div>
+      </main>
+    </PageShell>
   );
 }
 

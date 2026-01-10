@@ -78,8 +78,8 @@ export default function EmployeeProductsPage() {
         const product = item as unknown as Product;
         return (
           <span className="text-sm">
-            {typeof product.category === "string" 
-              ? product.category 
+            {typeof product.category === "string"
+              ? product.category
               : (product.category && typeof product.category === "object" && "name" in product.category)
                 ? (product.category as { name: string }).name
                 : "N/A"}
@@ -105,8 +105,8 @@ export default function EmployeeProductsPage() {
       render: (item: Record<string, unknown>) => {
         const product = item as unknown as Product;
         return (
-          <Badge variant={product.status === "active" ? "success" : "danger"}>
-            {product.status === "active" ? "Hoạt động" : "Không hoạt động"}
+          <Badge variant={product.isActive ? "success" : "danger"}>
+            {product.isActive ? "Hoạt động" : "Không hoạt động"}
           </Badge>
         );
       },
@@ -187,10 +187,10 @@ export default function EmployeeProductsPage() {
           pagination={
             data
               ? {
-                  currentPage: page,
-                  totalPages: data.totalPages || 1,
-                  onPageChange: setPage,
-                }
+                currentPage: page,
+                totalPages: data.totalPages || 1,
+                onPageChange: setPage,
+              }
               : undefined
           }
         />

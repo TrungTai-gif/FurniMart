@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
@@ -26,20 +26,14 @@ export default function HeroBanner({
   buttonLink = "/products",
   className,
 }: HeroBannerProps) {
-  const [imageError, setImageError] = useState(false);
-  const [imageSrc, setImageSrc] = useState<string | undefined>(undefined);
-  const [mounted, setMounted] = useState(false);
+  const [errorUrl, setErrorUrl] = useState<string | null>(null);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const normalizedImageUrl = useMemo(
+    () => normalizeImageUrl(imageUrl) || undefined,
+    [imageUrl]
+  );
 
-  // Update image source logic - normalize to API endpoint
-  useEffect(() => {
-    const normalized = normalizeImageUrl(imageUrl);
-    setImageSrc(normalized || undefined);
-    setImageError(false);
-  }, [imageUrl]);
+  const imageError = normalizedImageUrl ? errorUrl === normalizedImageUrl : false;
 
   return (
     <div
@@ -55,8 +49,7 @@ export default function HeroBanner({
         <div className="flex flex-col justify-center px-6 md:px-16 lg:px-28 py-20 order-2 lg:order-1 relative z-10">
           <div
             className={cn(
-              "space-y-8 max-w-xl transition-all duration-700 transform translate-y-4 opacity-0",
-              mounted && "translate-y-0 opacity-100"
+              "space-y-8 max-w-xl transition-all duration-700 transform translate-y-0 opacity-100"
             )}
           >
             {/* Editorial Headline */}
@@ -91,16 +84,16 @@ export default function HeroBanner({
 
         {/* Right Image */}
         <div className="relative w-full h-[450px] lg:h-auto order-1 lg:order-2">
-          {imageSrc && !imageError ? (
+          {normalizedImageUrl && !imageError ? (
             <>
               <Image
-                src={imageSrc}
+                src={normalizedImageUrl}
                 alt={title}
                 fill
                 className="object-cover"
                 priority
                 sizes="(max-width: 768px) 100vw, 50vw"
-                onError={() => setImageError(true)}
+                onError={() => setErrorUrl(normalizedImageUrl)}
               />
               {/* Warm overlay for cohesion */}
               <div className="absolute inset-0 bg-gradient-to-t from-stone-50/80 via-transparent to-transparent lg:bg-gradient-to-l lg:from-stone-50/60 lg:via-transparent lg:to-transparent opacity-90" />

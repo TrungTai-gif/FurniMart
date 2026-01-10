@@ -25,9 +25,14 @@ interface AppShellProps {
  */
 export default function AppShell({ children }: AppShellProps) {
   return (
-    <div className="min-h-screen flex flex-col w-full max-w-full overflow-x-hidden bg-white">
+    <div className="min-h-screen flex flex-col w-full max-w-full overflow-x-hidden bg-gradient-to-b from-white via-secondary-50 to-white text-secondary-900">
       <Navbar />
-      <main className="flex-1 w-full max-w-full overflow-x-hidden">{children}</main>
+      <main className="flex-1 w-full max-w-full overflow-x-hidden">
+        <div className="relative isolate">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/80 to-transparent" />
+          <div className="relative">{children}</div>
+        </div>
+      </main>
       <Footer />
     </div>
   );

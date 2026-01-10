@@ -17,6 +17,7 @@ import Image from "next/image";
 import { FiArrowLeft } from "react-icons/fi";
 import Badge from "@/components/ui/Badge";
 import DataTable from "@/components/dashboard/DataTable";
+import type { Branch } from "@/lib/types";
 
 export default function AdminProductDetailPage() {
   const params = useParams();
@@ -293,17 +294,24 @@ export default function AdminProductDetailPage() {
 
 // Component hiển thị tồn kho theo chi nhánh (read-only)
 function ProductInventoryByBranch({ productId }: { productId: string }) {
-  const { data: branches } = useQuery({
+  type InventoryByBranchItem = Awaited<
+    ReturnType<typeof warehouseService.getInventory>
+  >[number] & {
+    branchId?: string;
+    branchName?: string;
+  };
+
+  const { data: branches } = useQuery<Branch[]>({
     queryKey: ["branches"],
     queryFn: () => branchService.getBranches(),
   });
 
-  const { data: allInventory, isLoading } = useQuery({
+  const { data: allInventory, isLoading } = useQuery<InventoryByBranchItem[]>({
     queryKey: ["product", "inventory", "all-branches", productId],
     queryFn: async () => {
       if (!branches || branches.length === 0) return [];
       // Lấy inventory từ tất cả chi nhánh
-      const inventoryPromises = branches.map(async (branch: any) => {
+      const inventoryPromises = branches.map(async (branch) => {
         try {
           const inventory = await warehouseService.getInventory(branch.id, productId);
           return inventory.map((inv) => ({
@@ -325,14 +333,14 @@ function ProductInventoryByBranch({ productId }: { productId: string }) {
     {
       key: "branch",
       header: "Chi nhánh",
-      render: (item: any) => (
+      render: (item: InventoryByBranchItem) => (
         <span className="font-medium">{item.branchName || "N/A"}</span>
       ),
     },
     {
       key: "quantity",
       header: "Tồn kho",
-      render: (item: any) => (
+      render: (item: InventoryByBranchItem) => (
         <div>
           <p className="font-semibold">{item.quantity || 0}</p>
           <p className="text-xs text-secondary-500">
@@ -344,14 +352,14 @@ function ProductInventoryByBranch({ productId }: { productId: string }) {
     {
       key: "location",
       header: "Vị trí",
-      render: (item: any) => (
+      render: (item: InventoryByBranchItem) => (
         <span className="text-sm">{item.location || "N/A"}</span>
       ),
     },
     {
       key: "status",
       header: "Trạng thái",
-      render: (item: any) => {
+      render: (item: InventoryByBranchItem) => {
         const available = item.availableQuantity || 0;
         const minLevel = item.minStockLevel || 10;
         const variant = available > minLevel ? "success" : available > 0 ? "warning" : "danger";
@@ -379,9 +387,9 @@ function ProductInventoryByBranch({ productId }: { productId: string }) {
       <p className="text-sm text-secondary-600">
         📋 <strong>Read-only:</strong> Admin chỉ xem tồn kho, không thể chỉnh sửa. Manager chi nhánh sẽ quản lý tồn kho.
       </p>
-      <DataTable
+      <DataTable<InventoryByBranchItem>
         columns={columns}
-        data={allInventory as unknown as Record<string, unknown>[]}
+        data={allInventory}
         isLoading={isLoading}
       />
     </div>

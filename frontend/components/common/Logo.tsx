@@ -5,7 +5,7 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { settingsService } from "@/services/settingsService";
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 
 interface LogoProps {
   className?: string;
@@ -14,27 +14,23 @@ interface LogoProps {
 }
 
 export default function Logo({ className, size = "md", showText = true }: LogoProps) {
-  const [logoConfig, setLogoConfig] = useState<{
-    logoUrl?: string | null;
-    logoSvg?: string | null;
-    logoText?: string;
-  } | null>(null);
-
   const { data: headerSettings } = useQuery({
     queryKey: ["headerSettings"],
     queryFn: () => settingsService.getHeaderSettings(),
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
-  useEffect(() => {
-    if (headerSettings) {
-      setLogoConfig({
-        logoUrl: headerSettings.logoUrl,
-        logoSvg: headerSettings.logoSvg,
-        logoText: headerSettings.logoText || "FurniMart",
-      });
-    }
-  }, [headerSettings]);
+  const logoConfig = useMemo(
+    () =>
+      headerSettings
+        ? {
+            logoUrl: headerSettings.logoUrl,
+            logoSvg: headerSettings.logoSvg,
+            logoText: headerSettings.logoText || "FurniMart",
+          }
+        : null,
+    [headerSettings]
+  );
 
   const sizeClasses = {
     sm: "h-8 w-8",

@@ -3,10 +3,10 @@
 import { useQuery, UseQueryOptions } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 
-interface UseFetchOptions<TData, TError = AxiosError>
-  extends Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn"> {
-  // Cho phép custom options từ React Query
-}
+type UseFetchOptions<TData, TError = AxiosError> = Omit<
+  UseQueryOptions<TData, TError>,
+  "queryKey" | "queryFn"
+>;
 
 /**
  * Hook để fetch dữ liệu từ API

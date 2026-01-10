@@ -308,9 +308,7 @@ export interface ShippingTracking {
 }
 
 // Legacy Shipping interface for compatibility
-export interface Shipping extends ShippingTracking {
-  // All fields inherited from ShippingTracking
-}
+export type Shipping = ShippingTracking;
 
 export interface Wallet {
   id: string;
@@ -378,7 +376,7 @@ export interface WalletTransaction {
   vnpResponseCode?: string; // VNPAY response code
   vnpTransactionStatus?: string; // VNPAY transaction status
   expiresAt?: string; // Expiration for pending topup
-  vnpParams?: Record<string, any>; // Full VNPAY params
+  vnpParams?: Record<string, unknown>; // Full VNPAY params
   createdAt: string;
   updatedAt?: string;
 }
@@ -622,4 +620,3 @@ export interface Payment {
   createdAt: string;
   updatedAt: string;
 }
-

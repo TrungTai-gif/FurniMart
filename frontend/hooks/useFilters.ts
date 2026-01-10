@@ -23,13 +23,16 @@ export function useFilters(initialFilters: FilterState = {}) {
   const [filters, setFilters] = useState<FilterState>(initialFilters);
 
   // Update một filter duy nhất
-  const updateFilter = useCallback((key: string, value: any) => {
-    setFilters((prev) => {
-      const updated = { ...prev };
-      updated[key] = value;
-      return updated;
-    });
-  }, []);
+  const updateFilter = useCallback(
+    (key: string, value: FilterState[keyof FilterState]) => {
+      setFilters((prev) => {
+        const updated = { ...prev };
+        updated[key] = value;
+        return updated;
+      });
+    },
+    []
+  );
 
   // Update nhiều filters cùng lúc
   const updateFilters = useCallback((newFilters: Partial<FilterState>) => {

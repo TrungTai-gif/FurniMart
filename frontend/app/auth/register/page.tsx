@@ -136,6 +136,11 @@ export default function RegisterPage() {
           error={errors.password?.message}
           placeholder="Tối thiểu 8 ký tự"
         />
+        {!errors.password && (
+          <p className="text-xs text-secondary-500 -mt-3">
+            Mật khẩu nên có ít nhất 8 ký tự, bao gồm chữ hoa và số.
+          </p>
+        )}
 
         <PasswordInput
           label="Nhập lại mật khẩu"
@@ -168,7 +173,16 @@ export default function RegisterPage() {
         </Button>
       </form>
 
-      <div className="text-center text-sm mt-6">
+      <div className="mt-6 rounded-2xl border border-secondary-100 bg-secondary-50/70 p-4 text-sm text-secondary-600">
+        <p className="font-semibold text-secondary-800">Tạo tài khoản để nhận</p>
+        <ul className="mt-2 space-y-1">
+          <li>• Ưu đãi cho thành viên mới</li>
+          <li>• Gợi ý sản phẩm theo sở thích</li>
+          <li>• Hỗ trợ chăm sóc khách hàng nhanh</li>
+        </ul>
+      </div>
+
+      <div className="text-center text-sm mt-6 border-t border-secondary-100 pt-4">
         <span className="text-secondary-500">Đã có tài khoản? </span>
         <Link href="/auth/login" className="text-primary-600 font-semibold hover:text-primary-700 hover:underline underline-offset-2 transition-colors">
           Đăng nhập

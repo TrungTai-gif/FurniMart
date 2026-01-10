@@ -107,7 +107,7 @@ export default function AdminCategoriesPage() {
     // Backend CreateCategoryDto requires: name, slug
     // Backend optional: description, image, parentId, sortOrder
     // Backend UpdateCategoryDto: all fields optional, plus isActive
-    const submitData: any = {
+    const submitData: Partial<Category> = {
       name: formData.name.trim(),
       slug: formData.slug.trim() || formData.name.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''), // Auto-generate slug if empty
       ...(formData.description && { description: formData.description.trim() }),
@@ -117,7 +117,7 @@ export default function AdminCategoriesPage() {
     
     if (editingCategory) {
       // For update, include isActive
-      const updateData: any = {
+      const updateData: Partial<Category> = {
         ...submitData,
         ...(formData.isActive !== undefined && { isActive: formData.isActive }),
       };
