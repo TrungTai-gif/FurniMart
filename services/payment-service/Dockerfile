@@ -1,4 +1,4 @@
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
@@ -8,48 +8,71 @@ RUN npm config set fetch-timeout 300000 && \
     npm config set fetch-retry-mintimeout 20000 && \
     npm config set fetch-retry-maxtimeout 120000
 
-# Copy shared folder first
-COPY shared ./shared
+# Copy shared package files
+COPY shared/package*.json ./shared/
+COPY shared/tsconfig.json ./shared/
+COPY shared/index.ts ./shared/
+COPY shared/common ./shared/common
+COPY shared/config ./shared/config
+COPY shared/dtos ./shared/dtos
+COPY shared/types ./shared/types
+
+# Install shared dependencies and build
+WORKDIR /app/shared
+RUN (npm ci --no-audit --no-fund 2>/dev/null) || npm install --no-audit --no-fund
+RUN npm run build
+
+# Pack shared package
+RUN npm pack
+RUN mv furnimart-shared-1.0.0.tgz ../shared.tgz
+
+# Setup payment-service
+WORKDIR /app
+COPY services/payment-service/package*.json ./
+RUN (npm ci --no-audit --no-fund 2>/dev/null) || npm install --no-audit --no-fund
+
+# Install packed shared package
+RUN npm install ./shared.tgz --no-save
+
+# Copy payment-service source
+COPY services/payment-service ./
+
+# Copy shared dist to match tsconfig path alias (../../shared/dist from service perspective)
+# From /app, ../../shared/dist = /shared/dist
+RUN mkdir -p /shared && cp -r /app/shared/dist /shared/dist
+
+# Build payment-service
+RUN npm run build
+
+FROM node:22-alpine
+
+WORKDIR /app
+
+# Configure npm for better network handling
+RUN npm config set fetch-timeout 300000 && \
+    npm config set fetch-retries 5 && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000
 
 # Copy package files
 COPY services/payment-service/package*.json ./
-RUN for i in 1 2 3 4 5; do npm install --no-audit --no-fund && break || (echo "Attempt $i failed, retrying in 10 seconds..." && sleep 10); done
 
-# Copy service source code
-COPY services/payment-service ./
+# Install production dependencies
+RUN for i in 1 2 3 4 5; do \
+      npm ci --omit=dev --no-audit --no-fund && break || \
+      (echo "Attempt $i failed, retrying in 10 seconds..." && sleep 10); \
+    done
 
-# Fix tsconfig.json for Docker build context
-# 1. Change ../../shared/* to shared/* since we're in /app and shared is at /app/shared
-# 2. Remove rootDir restriction to allow shared files outside src
-RUN node -e " \
-    const fs = require('fs'); \
-    const config = JSON.parse(fs.readFileSync('tsconfig.json', 'utf8')); \
-    config.compilerOptions.paths['@shared/*'] = ['shared/*']; \
-    delete config.compilerOptions.rootDir; \
-    fs.writeFileSync('tsconfig.json', JSON.stringify(config, null, 2)); \
-    "
+# Copy and install shared package (with dependencies)
+COPY --from=builder /app/shared.tgz ./
+RUN npm install ./shared.tgz --no-save
 
-RUN npm run build
+# Create symlink for shared dist (code compiled with ../../shared/dist path)
+RUN mkdir -p /shared && ln -s /app/node_modules/@furnimart/shared/dist /shared/dist
 
-FROM node:20-alpine
-
-WORKDIR /app
-
-# Configure npm for better network handling
-RUN npm config set fetch-timeout 300000 && \
-    npm config set fetch-retries 5 && \
-    npm config set fetch-retry-mintimeout 20000 && \
-    npm config set fetch-retry-maxtimeout 120000
-
-# Copy shared folder (needed for runtime if any shared code is used)
-COPY shared ./shared
-
-COPY services/payment-service/package*.json ./
-RUN for i in 1 2 3 4 5; do npm install --production --no-audit --no-fund && break || (echo "Attempt $i failed, retrying in 10 seconds..." && sleep 10); done
-
+# Copy built application
 COPY --from=builder /app/dist ./dist
 
 EXPOSE 3015
 
-CMD ["node", "dist/src/main.js"]
-
+CMD ["node", "dist/main.js"]
