@@ -1,6 +1,8 @@
 import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { HttpService } from '@nestjs/axios';
 import { Model } from 'mongoose';
+import { firstValueFrom } from 'rxjs';
 import { Payment, PaymentDocument } from './schemas/payment.schema';
 import { CreatePaymentDto, UpdatePaymentStatusDto, CreateVnpayPaymentUrlDto } from './dtos/payment.dto';
 import * as crypto from 'crypto';
@@ -10,14 +12,16 @@ import dateFormat from 'dateformat';
 @Injectable()
 export class PaymentService {
   private readonly logger = new Logger(PaymentService.name);
+  private readonly ORDER_SERVICE_URL = process.env.ORDER_SERVICE_URL || 'http://order-service:3005';
   private vnp_TmnCode = process.env.VNP_TMN_CODE || '7MFQRM1G';
   private vnp_HashSecret = process.env.VNP_HASH_SECRET || 'HUOUL72ZW06UZRY5ZG6D8QARXPQ1ZDDR';
   private vnp_Url = process.env.VNP_URL || 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html';
   private vnp_ReturnUrl = process.env.VNP_RETURN_URL || `${process.env.FRONTEND_URL || 'http://localhost:3000'}/payment/return`;
-  private vnp_IpnUrl = process.env.VNP_IPN_URL || `${process.env.API_GATEWAY_URL || 'http://localhost:3001'}/api/payment/ipn`;
+  private vnp_IpnUrl = process.env.VNP_IPN_URL || `${process.env.API_GATEWAY_URL || 'http://localhost:3001'}/api/payments/ipn`;
 
   constructor(
     @InjectModel(Payment.name) private paymentModel: Model<PaymentDocument>,
+    private httpService: HttpService,
   ) {}
 
   // Helper function to sort object (theo code demo VNPay)
@@ -80,6 +84,7 @@ export class PaymentService {
       vnp_Params['vnp_OrderType'] = orderType === 'other' ? 'billpayment' : orderType;
       vnp_Params['vnp_Amount'] = amount * 100; // Nhân 100 để chuyển sang xu
       vnp_Params['vnp_ReturnUrl'] = this.vnp_ReturnUrl;
+      vnp_Params['vnp_IpnUrl'] = this.vnp_IpnUrl;
       vnp_Params['vnp_IpAddr'] = ipAddr;
       vnp_Params['vnp_CreateDate'] = createDate;
       vnp_Params['vnp_ExpireDate'] = expireDateStr; // Bắt buộc theo tài liệu
@@ -167,7 +172,8 @@ export class PaymentService {
       }
 
       // Kiểm tra nếu đã xử lý (RspCode: 02 = Order already confirmed)
-      if (payment.status === 'completed') {
+      // Check both 'completed' (legacy) and 'paid'/'PAID' (standard)
+      if (payment.status === 'completed' || payment.status === 'paid' || payment.status === 'PAID') {
         this.logger.debug(`VNPay IPN - Payment already completed for orderId: ${orderId}`);
         return { RspCode: '02', Message: 'Order already confirmed' };
       }
@@ -176,16 +182,65 @@ export class PaymentService {
       // RspCode: 00 = Giao dịch thành công
       // TransactionStatus: 00 = Giao dịch thanh toán được thực hiện thành công tại VNPAY
       if (rspCode === '00' && transactionStatus === '00') {
-        payment.status = 'completed';
+        payment.status = 'paid'; // Use 'paid' to match shared types (also supports 'PAID')
         payment.completedAt = new Date();
         payment.transactionId = vnp_Params['vnp_TransactionNo'];
         payment.gatewayResponse = vnp_Params;
         this.logger.log(`VNPay IPN - Payment completed for orderId: ${orderId}`);
+
+        // Cập nhật order paymentStatus
+        try {
+          const internalSecret = process.env.INTERNAL_SERVICE_SECRET || 'furnimart-internal-secret-2024';
+          const updateOrderUrl = `${this.ORDER_SERVICE_URL}/api/orders/${orderId}/payment-status`;
+          await firstValueFrom(this.httpService.patch(updateOrderUrl, {
+            paymentStatus: 'PAID',
+            isPaid: true,
+          }, {
+            headers: {
+              'x-internal-secret': internalSecret,
+            },
+          }));
+          this.logger.log(`VNPay IPN - Updated order paymentStatus to PAID for orderId: ${orderId}`);
+        } catch (error: any) {
+          this.logger.error(`VNPay IPN - Failed to update order paymentStatus for orderId: ${orderId}`, error.message);
+          // Không throw error để không ảnh hưởng đến response cho VNPay
+        }
       } else {
+        // Xử lý các trường hợp lỗi theo tài liệu VNPay
         payment.status = 'failed';
-        payment.failedReason = `ResponseCode: ${rspCode}, TransactionStatus: ${transactionStatus}`;
+        
+        // Map RspCode và TransactionStatus thành thông báo lỗi chi tiết
+        const errorMessages: { [key: string]: string } = {
+          '07': 'Giao dịch bị nghi ngờ gian lận',
+          '09': 'Thẻ/Tài khoản chưa đăng ký InternetBanking',
+          '10': 'Xác thực thông tin không đúng quá 3 lần',
+          '11': 'Đã hết hạn chờ thanh toán',
+          '12': 'Thẻ/Tài khoản bị khóa',
+          '13': 'Nhập sai mật khẩu OTP',
+          '24': 'Khách hàng hủy giao dịch',
+          '51': 'Tài khoản không đủ số dư',
+          '65': 'Vượt quá hạn mức giao dịch trong ngày',
+          '75': 'Ngân hàng thanh toán đang bảo trì',
+          '79': 'Nhập sai mật khẩu quá số lần quy định',
+          '99': 'Các lỗi khác',
+        };
+
+        const transactionStatusMessages: { [key: string]: string } = {
+          '01': 'Giao dịch chưa hoàn tất',
+          '02': 'Giao dịch bị lỗi',
+          '04': 'Giao dịch đảo (Khách hàng đã bị trừ tiền nhưng GD chưa thành công)',
+          '05': 'VNPAY đang xử lý giao dịch này (GD hoàn tiền)',
+          '06': 'VNPAY đã gửi yêu cầu hoàn tiền sang Ngân hàng',
+          '07': 'Giao dịch bị nghi ngờ gian lận',
+          '09': 'GD Hoàn trả bị từ chối',
+        };
+
+        const rspMessage = errorMessages[rspCode] || `ResponseCode: ${rspCode}`;
+        const statusMessage = transactionStatusMessages[transactionStatus] || `TransactionStatus: ${transactionStatus}`;
+        
+        payment.failedReason = `${rspMessage}. ${statusMessage}`;
         payment.gatewayResponse = vnp_Params;
-        this.logger.warn(`VNPay IPN - Payment failed for orderId: ${orderId}, Reason: ${payment.failedReason}`);
+        this.logger.warn(`VNPay IPN - Payment failed for orderId: ${orderId}, RspCode: ${rspCode}, TransactionStatus: ${transactionStatus}, Reason: ${payment.failedReason}`);
       }
 
       await payment.save();
@@ -238,7 +293,8 @@ export class PaymentService {
   async updateStatus(id: string, updateDto: UpdatePaymentStatusDto): Promise<Payment> {
     const payment = await this.findById(id);
     
-    if (updateDto.status === 'completed') {
+    // Support both 'completed' (legacy) and 'paid'/'PAID' (standard)
+    if (updateDto.status === 'completed' || updateDto.status === 'paid' || updateDto.status === 'PAID') {
       payment.completedAt = new Date();
     }
 

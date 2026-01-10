@@ -20,6 +20,7 @@ export class CreatePaymentDto {
   @IsString()
   orderDescription?: string;
 }
+
 export class CreateVnpayPaymentUrlDto {
   @ApiProperty({ description: 'Order ID' })
   @IsString()
