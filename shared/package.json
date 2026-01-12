@@ -2,10 +2,6 @@
   "name": "@furnimart/shared",
   "version": "1.0.0",
   "description": "Shared libraries for FurniMart microservices",
-<<<<<<< HEAD
-  "main": "index.js",
-  "scripts": {
-=======
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -14,7 +10,6 @@
   "scripts": {
     "clean": "rimraf dist",
     "prebuild": "npm run clean",
->>>>>>> nhung
     "build": "tsc",
     "watch": "tsc --watch"
   },
@@ -29,24 +24,13 @@
     "mongoose": "^8.0.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
-<<<<<<< HEAD
-    "rxjs": "^7.8.0"
-=======
     "rxjs": "^7.8.0",
     "@nestjs/swagger": "^7.1.0"
->>>>>>> nhung
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/passport-jwt": "^4.0.1",
-<<<<<<< HEAD
-    "typescript": "^5.2.0"
-  }
-}
-
-=======
     "rimraf": "^5.0.0",
     "typescript": "^5.2.0"
   }
 }
->>>>>>> nhung
