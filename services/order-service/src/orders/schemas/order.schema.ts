@@ -44,13 +44,7 @@ export class Order {
   // Standardized order status flow (0.2): 
   // PENDING_CONFIRMATION → CONFIRMED → PACKING → READY_TO_SHIP → SHIPPING → DELIVERED → COMPLETED
   // Error branch: CANCELLED, FAILED_DELIVERY, RETURNING, RETURNED
-  @Prop({ 
-    default: 'PENDING_CONFIRMATION', 
-    enum: [
-      'PENDING_CONFIRMATION', 'CONFIRMED', 'PACKING', 'READY_TO_SHIP', 
-      'SHIPPING', 'DELIVERED', 'COMPLETED',
-      'CANCELLED', 'FAILED_DELIVERY', 'RETURNING', 'RETURNED'
-    ],
+
     uppercase: true 
   })
   status!: string;
@@ -59,12 +53,6 @@ export class Order {
   paymentMethod!: string;
 
   // Payment status (0.3): UNPAID, PAID, REFUND_PENDING, REFUNDED, FAILED
-  @Prop({ 
-    default: 'UNPAID',
-    enum: ['UNPAID', 'PAID', 'REFUND_PENDING', 'REFUNDED', 'FAILED'],
-    uppercase: true
-  })
-  paymentStatus!: string;
 
   @Prop({ default: false })
   isPaid!: boolean; // Legacy field, use paymentStatus instead
