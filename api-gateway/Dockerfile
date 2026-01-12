@@ -1,4 +1,4 @@
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
@@ -44,9 +44,7 @@ RUN mkdir -p /shared && cp -r /app/shared/dist /shared/dist
 # Build api-gateway
 RUN npm run build
 
-FROM node:20-alpine
-
-WORKDIR /app
+FROM node:22-alpine
 
 # Configure npm for better network handling
 RUN npm config set fetch-timeout 300000 && \

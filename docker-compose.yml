@@ -4,7 +4,7 @@ services:
     container_name: furnimart-mongodb
     restart: unless-stopped
     ports:
-      - '27017:27017'
+      - "27017:27017"
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: admin123
@@ -14,7 +14,7 @@ services:
     networks:
       - furnimart-network
     healthcheck:
-      test: ['CMD', 'mongosh', '--eval', 'db.adminCommand("ping")']
+      test: ["CMD", "mongosh", "--eval", 'db.adminCommand("ping")']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -28,7 +28,7 @@ services:
     container_name: furnimart-api-gateway
     restart: unless-stopped
     ports:
-      - '3001:3001'
+      - "3001:3001"
     environment:
       PORT: 3001
       NODE_ENV: ${NODE_ENV:-production}
@@ -50,6 +50,7 @@ services:
       PROMOTION_SERVICE_URL: http://promotion-service:3016
       BRANCH_SERVICE_URL: http://branch-service:3017
       WALLET_SERVICE_URL: http://wallet-service:3018
+      CART_SERVICE_URL: http://cart-service:3019
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:3001}
     depends_on:
       - auth-service
@@ -69,10 +70,17 @@ services:
       - promotion-service
       - branch-service
       - wallet-service
+      - cart-service
     networks:
       - furnimart-network
     healthcheck:
-      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3001/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3001/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -85,7 +93,7 @@ services:
     container_name: furnimart-auth-service
     restart: unless-stopped
     ports:
-      - '3002:3002'
+      - "3002:3002"
     environment:
       PORT: 3002
       NODE_ENV: ${NODE_ENV:-production}
@@ -97,7 +105,13 @@ services:
     networks:
       - furnimart-network
     healthcheck:
-      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3002/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3002/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -110,7 +124,7 @@ services:
     container_name: furnimart-user-service
     restart: unless-stopped
     ports:
-      - '3003:3003'
+      - "3003:3003"
     environment:
       PORT: 3003
       NODE_ENV: ${NODE_ENV:-production}
@@ -122,7 +136,13 @@ services:
     networks:
       - furnimart-network
     healthcheck:
-      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3003/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3003/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -135,7 +155,7 @@ services:
     container_name: furnimart-product-service
     restart: unless-stopped
     ports:
-      - '3004:3004'
+      - "3004:3004"
     environment:
       PORT: 3004
       NODE_ENV: ${NODE_ENV:-production}
@@ -147,7 +167,13 @@ services:
     networks:
       - furnimart-network
     healthcheck:
-      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3004/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3004/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -160,7 +186,7 @@ services:
     container_name: furnimart-order-service
     restart: unless-stopped
     ports:
-      - '3005:3005'
+      - "3005:3005"
     environment:
       PORT: 3005
       NODE_ENV: ${NODE_ENV:-production}
@@ -172,7 +198,13 @@ services:
     networks:
       - furnimart-network
     healthcheck:
-      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3005/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3005/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -185,7 +217,7 @@ services:
     container_name: furnimart-shipping-service
     restart: unless-stopped
     ports:
-      - '3006:3006'
+      - "3006:3006"
     environment:
       PORT: 3006
       NODE_ENV: ${NODE_ENV:-production}
@@ -197,7 +229,13 @@ services:
     networks:
       - furnimart-network
     healthcheck:
-      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3006/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3006/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -210,7 +248,7 @@ services:
     container_name: furnimart-review-service
     restart: unless-stopped
     ports:
-      - '3007:3007'
+      - "3007:3007"
     environment:
       PORT: 3007
       NODE_ENV: ${NODE_ENV:-production}
@@ -222,7 +260,13 @@ services:
     networks:
       - furnimart-network
     healthcheck:
-      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3007/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3007/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -235,7 +279,7 @@ services:
     container_name: furnimart-chat-service
     restart: unless-stopped
     ports:
-      - '3008:3008'
+      - "3008:3008"
     environment:
       PORT: 3008
       NODE_ENV: ${NODE_ENV:-production}
@@ -247,7 +291,13 @@ services:
     networks:
       - furnimart-network
     healthcheck:
-      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3008/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3008/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -260,7 +310,7 @@ services:
     container_name: furnimart-warehouse-service
     restart: unless-stopped
     ports:
-      - '3009:3009'
+      - "3009:3009"
     environment:
       PORT: 3009
       NODE_ENV: ${NODE_ENV:-production}
@@ -272,7 +322,13 @@ services:
     networks:
       - furnimart-network
     healthcheck:
-      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3009/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3009/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -285,7 +341,7 @@ services:
     container_name: furnimart-dispute-service
     restart: unless-stopped
     ports:
-      - '3010:3010'
+      - "3010:3010"
     environment:
       PORT: 3010
       NODE_ENV: ${NODE_ENV:-production}
@@ -297,7 +353,13 @@ services:
     networks:
       - furnimart-network
     healthcheck:
-      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3010/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3010/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -310,7 +372,7 @@ services:
     container_name: furnimart-settings-service
     restart: unless-stopped
     ports:
-      - '3011:3011'
+      - "3011:3011"
     environment:
       PORT: 3011
       NODE_ENV: ${NODE_ENV:-production}
@@ -322,7 +384,13 @@ services:
     networks:
       - furnimart-network
     healthcheck:
-      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3011/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3011/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -335,7 +403,7 @@ services:
     container_name: furnimart-upload-service
     restart: unless-stopped
     ports:
-      - '3012:3012'
+      - "3012:3012"
     environment:
       PORT: 3012
       NODE_ENV: ${NODE_ENV:-production}
@@ -347,7 +415,13 @@ services:
     networks:
       - furnimart-network
     healthcheck:
-      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3012/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3012/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -360,7 +434,7 @@ services:
     container_name: furnimart-category-service
     restart: unless-stopped
     ports:
-      - '3013:3013'
+      - "3013:3013"
     environment:
       PORT: 3013
       NODE_ENV: ${NODE_ENV:-production}
@@ -372,7 +446,13 @@ services:
     networks:
       - furnimart-network
     healthcheck:
-      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3013/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3013/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -385,7 +465,7 @@ services:
     container_name: furnimart-dashboard-service
     restart: unless-stopped
     ports:
-      - '3014:3014'
+      - "3014:3014"
     environment:
       PORT: 3014
       NODE_ENV: ${NODE_ENV:-production}
@@ -397,7 +477,13 @@ services:
     networks:
       - furnimart-network
     healthcheck:
-      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3014/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3014/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -410,7 +496,7 @@ services:
     container_name: furnimart-payment-service
     restart: unless-stopped
     ports:
-      - '3015:3015'
+      - "3015:3015"
     environment:
       PORT: 3015
       NODE_ENV: ${NODE_ENV:-production}
@@ -431,7 +517,13 @@ services:
     networks:
       - furnimart-network
     healthcheck:
-      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3015/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3015/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -444,7 +536,7 @@ services:
     container_name: furnimart-promotion-service
     restart: unless-stopped
     ports:
-      - '3016:3016'
+      - "3016:3016"
     environment:
       PORT: 3016
       NODE_ENV: ${NODE_ENV:-production}
@@ -456,7 +548,13 @@ services:
     networks:
       - furnimart-network
     healthcheck:
-      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3016/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3016/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -469,7 +567,7 @@ services:
     container_name: furnimart-branch-service
     restart: unless-stopped
     ports:
-      - '3017:3017'
+      - "3017:3017"
     environment:
       PORT: 3017
       NODE_ENV: ${NODE_ENV:-production}
@@ -481,7 +579,13 @@ services:
     networks:
       - furnimart-network
     healthcheck:
-      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3017/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3017/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -494,7 +598,7 @@ services:
     container_name: furnimart-wallet-service
     restart: unless-stopped
     ports:
-      - '3018:3018'
+      - "3018:3018"
     environment:
       PORT: 3018
       NODE_ENV: ${NODE_ENV:-production}
@@ -506,7 +610,44 @@ services:
     networks:
       - furnimart-network
     healthcheck:
-      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3018/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3018/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  cart-service:
+    build:
+      context: .
+      dockerfile: ./services/cart-service/Dockerfile
+    container_name: furnimart-cart-service
+    restart: unless-stopped
+    ports:
+      - "3019:3019"
+    environment:
+      PORT: 3019
+      NODE_ENV: ${NODE_ENV:-production}
+      MONGODB_URI: ${MONGODB_URI:-mongodb://admin:admin123@mongodb:27017/furnimart?authSource=admin}
+      JWT_SECRET: ${JWT_SECRET:-furnimart-secret-key-2024}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - furnimart-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3019/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -523,7 +664,7 @@ services:
     container_name: furnimart-frontend
     restart: unless-stopped
     ports:
-      - '3000:3000'
+      - "3000:3000"
     environment:
       # API Gateway URL for client-side requests (browser)
       # In Docker: use host IP or localhost if accessing from host machine
@@ -535,7 +676,13 @@ services:
     networks:
       - furnimart-network
     healthcheck:
-      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
