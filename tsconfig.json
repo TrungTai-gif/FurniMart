@@ -18,8 +18,8 @@
       "node"
     ]
   },
-  "include": [
-    "scripts/**/*"
+  "files": [
+    "scripts/seed/index.ts"
   ],
   "exclude": [
     "node_modules",

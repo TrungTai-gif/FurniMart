@@ -1,4 +1,4 @@
-# Order Service .dockerignore
+﻿# Order Service .dockerignore
 services/*
 !services/order-service/
 frontend/

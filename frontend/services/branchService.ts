@@ -12,7 +12,6 @@ interface BranchFilters {
 interface InventoryItem {
   product?: { name: string; id: string };
   quantity: number;
-  availableQuantity?: number;
   [key: string]: unknown;
 }
 
@@ -25,9 +24,7 @@ export const branchService = {
           if (value) params.append(key, String(value));
         });
       }
-      const url = params.toString()
-        ? `${endpoints.branches.list}?${params.toString()}`
-        : endpoints.branches.list;
+      const url = params.toString() ? `${endpoints.branches.list}?${params.toString()}` : endpoints.branches.list;
       const response = await apiClient.get<Branch[]>(url);
       return response.data;
     } catch (error) {
@@ -43,19 +40,12 @@ export const branchService = {
   },
 
   getNearestBranches: async (lat: number, lng: number): Promise<Branch[]> => {
-    const response = await apiClient.get<Branch[]>(
-      `${endpoints.branches.nearest}?lat=${lat}&lng=${lng}`
-    );
+    const response = await apiClient.get<Branch[]>(`${endpoints.branches.nearest}?lat=${lat}&lng=${lng}`);
     return response.data;
   },
 
-  getNearestBranch: async (
-    lat: number,
-    lng: number
-  ): Promise<Branch | null> => {
-    const response = await apiClient.get<Branch>(
-      `${endpoints.branches.nearestSingle}?lat=${lat}&lng=${lng}`
-    );
+  getNearestBranch: async (lat: number, lng: number): Promise<Branch | null> => {
+    const response = await apiClient.get<Branch>(`${endpoints.branches.nearestSingle}?lat=${lat}&lng=${lng}`);
     return response.data;
   },
 
@@ -66,76 +56,50 @@ export const branchService = {
 
   getBranch: async (id: string): Promise<Branch> => {
     try {
-      const response = await apiClient.get<Branch>(
-        endpoints.branches.detail(id)
-      );
+      const response = await apiClient.get<Branch>(endpoints.branches.detail(id));
       return response.data;
     } catch (error) {
       throw new Error("Không thể tải thông tin chi nhánh");
     }
   },
 
-  getBranchInventory: async (
-    branchId: string,
-    productId?: string
-  ): Promise<InventoryItem[]> => {
+  getBranchInventory: async (branchId: string, productId?: string): Promise<InventoryItem[]> => {
     const params = productId ? `?productId=${productId}` : "";
-    const response = await apiClient.get<InventoryItem[]>(
-      `${endpoints.branches.inventory(branchId)}${params}`
-    );
+    const response = await apiClient.get<InventoryItem[]>(`${endpoints.branches.inventory(branchId)}${params}`);
     return response.data;
   },
 
   create: async (data: Partial<Branch>): Promise<Branch> => {
-    const response = await apiClient.post<Branch>(
-      endpoints.branches.create,
-      data
-    );
+    const response = await apiClient.post<Branch>(endpoints.branches.create, data);
     return response.data;
   },
 
   update: async (id: string, data: Partial<Branch>): Promise<Branch> => {
-    const response = await apiClient.put<Branch>(
-      endpoints.branches.update(id),
-      data
-    );
+    const response = await apiClient.put<Branch>(endpoints.branches.update(id), data);
     return response.data;
   },
 
-  approve: async (
-    id: string,
-    data: { approved: boolean; reason?: string }
-  ): Promise<Branch> => {
+  approve: async (id: string, data: { approved: boolean; reason?: string }): Promise<Branch> => {
     // Backend ApproveBranchDto requires: status ('approved' | 'rejected'), rejectedReason (optional)
-    const response = await apiClient.put<Branch>(
-      endpoints.branches.approve(id),
-      {
-        status: data.approved ? "approved" : "rejected",
-        ...(data.reason && { rejectedReason: data.reason }),
-      }
-    );
+    const response = await apiClient.put<Branch>(endpoints.branches.approve(id), {
+      status: data.approved ? 'approved' : 'rejected',
+      ...(data.reason && { rejectedReason: data.reason }),
+    });
     return response.data;
   },
 
   activate: async (id: string): Promise<Branch> => {
-    const response = await apiClient.put<Branch>(
-      endpoints.branches.activate(id)
-    );
+    const response = await apiClient.put<Branch>(endpoints.branches.activate(id));
     return response.data;
   },
 
   deactivate: async (id: string): Promise<Branch> => {
-    const response = await apiClient.put<Branch>(
-      endpoints.branches.deactivate(id)
-    );
+    const response = await apiClient.put<Branch>(endpoints.branches.deactivate(id));
     return response.data;
   },
 
   assignManager: async (id: string, managerId: string): Promise<Branch> => {
-    const response = await apiClient.put<Branch>(
-      endpoints.branches.assignManager(id),
-      { managerId }
-    );
+    const response = await apiClient.put<Branch>(endpoints.branches.assignManager(id), { managerId });
     return response.data;
   },
 
@@ -143,3 +107,4 @@ export const branchService = {
     await apiClient.delete(endpoints.branches.delete(id));
   },
 };
+

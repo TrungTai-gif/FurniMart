@@ -14,6 +14,19 @@ export class AuditLog {
   @Prop({ required: true })
   description!: string;
 
+  @Prop({
+    type: {
+      id: { type: String, required: true },
+      name: { type: String, required: true },
+      role: { type: String },
+    },
+    required: true,
+  })
+  performedBy!: {
+    id: string;
+    name: string;
+    role?: string;
+  };
 
   @Prop({
     type: [{

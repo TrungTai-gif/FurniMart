@@ -173,9 +173,7 @@ export default function ProductDetailPage() {
     if (
       !inventory ||
       inventory.length === 0 ||
-      ((inventory[0]?.availableQuantity ??
-        inventory[0]?.quantity ??
-        0) as number) < quantity
+      inventory[0].quantity < quantity
     ) {
       toast.error("Chi nhánh này không đủ hàng");
       return;
@@ -283,7 +281,9 @@ export default function ProductDetailPage() {
                     variant="danger"
                     className="tracking-wider text-[10px] uppercase font-bold px-2 py-0.5"
                   >
-                    -{discountPercent}%
+                    -
+                    {discountPercent}
+                    %
                   </Badge>
                 )}
                 {(typeof product.category === "object"
@@ -342,18 +342,7 @@ export default function ProductDetailPage() {
                 )}
 
                 <div className="flex items-center gap-2 text-sm bg-secondary-50 px-3 py-1.5 rounded-full">
-                  {!selectedBranch ? (
-                    <>
-                      <span className="w-2 h-2 rounded-full bg-secondary-400" />
-                      <span className="text-secondary-600 font-medium">
-                        Chọn chi nhánh xem hàng
-                      </span>
-                    </>
-                  ) : inventory &&
-                    inventory.length > 0 &&
-                    ((inventory[0]?.availableQuantity ??
-                      inventory[0]?.quantity ??
-                      0) as number) > 0 ? (
+                  {product.status === "active" || product.isActive ? (
                     <>
                       <FiCheck className="w-4 h-4 text-emerald-600" />
                       <span className="text-emerald-700 font-medium">
@@ -414,14 +403,9 @@ export default function ProductDetailPage() {
                           <>
                             {inventory &&
                             inventory.length > 0 &&
-                            (inventory[0]?.availableQuantity ??
-                              inventory[0]?.quantity ??
-                              0) > 0 ? (
+                            inventory[0].quantity > 0 ? (
                               <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100">
-                                Có sẵn{" "}
-                                {inventory[0]?.availableQuantity ??
-                                  inventory[0]?.quantity}{" "}
-                                sp
+                                Có sẵn {inventory[0]?.quantity} sp
                               </span>
                             ) : (
                               <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-md border border-red-100">

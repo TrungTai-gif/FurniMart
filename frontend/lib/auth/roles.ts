@@ -12,13 +12,10 @@ export const roles = {
   shipper: "shipper",
 } as const;
 
-export type Role = (typeof roles)[keyof typeof roles];
+export type Role = typeof roles[keyof typeof roles];
 
 // Check if user has required role
-export const hasRole = (
-  userRole: string | undefined,
-  requiredRoles: string[]
-): boolean => {
+export const hasRole = (userRole: string | undefined, requiredRoles: string[]): boolean => {
   if (!userRole) return false;
   return requiredRoles.includes(userRole);
 };

@@ -26,9 +26,7 @@ export default function Topbar({ notifications }: TopbarProps) {
     <div className="sticky top-0 z-40 bg-white border-b border-secondary-200 w-full max-w-full overflow-x-hidden">
       <div className="px-6 py-4 flex items-center justify-between w-full max-w-full">
         <div className="flex items-center gap-4">
-          <h1 className="text-xl font-medium text-secondary-900 tracking-tight">
-            FurniMart
-          </h1>
+          <h1 className="text-xl font-medium text-secondary-900 tracking-tight lg:hidden">FurniMart</h1>
         </div>
 
         <div className="flex items-center gap-4">
@@ -105,3 +103,4 @@ export default function Topbar({ notifications }: TopbarProps) {
     </div>
   );
 }
+

@@ -27,7 +27,7 @@ import { Product } from "@/lib/types";
 interface LocalInventoryItem {
   id: string;
   productId: string;
-  product?: { id: string; name: string; [key: string]: unknown };
+  product?: { id: string; name: string;[key: string]: unknown };
   quantity: number;
   reservedQuantity: number;
   availableQuantity: number;
@@ -45,9 +45,7 @@ export default function ManagerInventoryPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [adjustModalOpen, setAdjustModalOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<LocalInventoryItem | null>(
-    null
-  );
+  const [selectedItem, setSelectedItem] = useState<LocalInventoryItem | null>(null);
   const [adjustQuantity, setAdjustQuantity] = useState("");
   const [adjustReason, setAdjustReason] = useState("");
   const [addProductModalOpen, setAddProductModalOpen] = useState(false);
@@ -63,9 +61,7 @@ export default function ManagerInventoryPage() {
 
       // Try to get inventory from branch service first
       try {
-        const branchInventory = await branchService.getBranchInventory(
-          branchId || ""
-        );
+        const branchInventory = await branchService.getBranchInventory(branchId || "");
         if (branchInventory && branchInventory.length > 0) {
           inventoryItems = branchInventory as unknown as LocalInventoryItem[];
         }
@@ -76,42 +72,20 @@ export default function ManagerInventoryPage() {
       // If no branch inventory, try warehouse service
       if (inventoryItems.length === 0) {
         try {
-          const warehouseInventory = await warehouseService.getInventory(
-            branchId || undefined
-          );
-          inventoryItems = warehouseInventory.map((item) => {
-            const availableQuantity = item.availableQuantity || 0;
-            const minStockLevel = item.minStockLevel || 10;
-
-            // Calculate status: out_of_stock, low_stock, or in_stock
-            let status: "in_stock" | "low_stock" | "out_of_stock";
-            if (availableQuantity === 0) {
-              status = "out_of_stock";
-            } else if (availableQuantity <= minStockLevel) {
-              status = "low_stock";
-            } else {
-              status = "in_stock";
-            }
-
-            return {
-              id: item.id,
-              productId: item.productId,
-              product: item.product || {
-                id: item.productId,
-                name: (item as any).productName || "N/A",
-              },
-              quantity: item.quantity || 0,
-              reservedQuantity: item.reservedQuantity || 0,
-              availableQuantity,
-              minStockLevel,
-              maxStockLevel: item.maxStockLevel || 100,
-              location: item.location || "Kho chính",
-              status,
-              lastUpdated:
-                (item as { updatedAt?: string }).updatedAt ||
-                new Date().toISOString(),
-            };
-          }) as LocalInventoryItem[];
+          const warehouseInventory = await warehouseService.getInventory(branchId || undefined);
+          inventoryItems = warehouseInventory.map((item) => ({
+            id: item.id,
+            productId: item.productId,
+            product: item.product || { id: item.productId, name: (item as any).productName || "N/A" },
+            quantity: item.quantity || 0,
+            reservedQuantity: item.reservedQuantity || 0,
+            availableQuantity: item.availableQuantity || 0,
+            minStockLevel: item.minStockLevel || 10,
+            maxStockLevel: item.maxStockLevel || 100,
+            location: item.location || "Kho chính",
+            status: (item.availableQuantity || 0) > (item.minStockLevel || 10) ? "in_stock" : "low_stock",
+            lastUpdated: (item as { updatedAt?: string }).updatedAt || new Date().toISOString(),
+          })) as LocalInventoryItem[];
         } catch (error) {
           console.error("Error fetching inventory:", error);
           return [];
@@ -128,11 +102,7 @@ export default function ManagerInventoryPage() {
                 const product = await productService.getProduct(item.productId);
                 return {
                   ...item,
-                  product: {
-                    ...item.product,
-                    id: product.id,
-                    name: product.name,
-                  },
+                  product: { ...item.product, id: product.id, name: product.name },
                 };
               } catch (err) {
                 // If fetch fails, keep original item
@@ -153,23 +123,15 @@ export default function ManagerInventoryPage() {
   // Get products for adding to inventory
   const { data: productsData, refetch: refetchProducts } = useQuery({
     queryKey: ["products", "for-inventory"],
-    queryFn: () =>
-      productService.getProducts({ page: 1, limit: 100, status: "active" }),
+    queryFn: () => productService.getProducts({ page: 1, limit: 100, status: "active" }),
     enabled: addProductModalOpen,
   });
 
   const availableProducts = productsData?.items || [];
 
   const adjustStockMutation = useMutation({
-    mutationFn: ({
-      itemId,
-      quantity,
-      reason,
-    }: {
-      itemId: string;
-      quantity: number;
-      reason?: string;
-    }) => warehouseService.adjustStock(itemId, { quantity, reason }),
+    mutationFn: ({ itemId, quantity, reason }: { itemId: string; quantity: number; reason?: string }) =>
+      warehouseService.adjustStock(itemId, { quantity, reason }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["manager", "inventory"] });
       toast.success("Điều chỉnh tồn kho thành công");
@@ -184,21 +146,7 @@ export default function ManagerInventoryPage() {
   });
 
   const addProductMutation = useMutation({
-    mutationFn: ({
-      productId,
-      productName,
-      quantity,
-      location,
-      minStockLevel,
-      maxStockLevel,
-    }: {
-      productId: string;
-      productName: string;
-      quantity: number;
-      location?: string;
-      minStockLevel?: number;
-      maxStockLevel?: number;
-    }) =>
+    mutationFn: ({ productId, productName, quantity, location, minStockLevel, maxStockLevel }: { productId: string; productName: string; quantity: number; location?: string; minStockLevel?: number; maxStockLevel?: number }) =>
       warehouseService.create({
         productId,
         productName,
@@ -223,31 +171,23 @@ export default function ManagerInventoryPage() {
     },
   });
 
-  const filteredData =
-    data?.filter((item) => {
-      if (search) {
-        const searchLower = search.toLowerCase();
-        const productName = item.product?.name?.toLowerCase() || "";
-        if (!productName.includes(searchLower)) return false;
-      }
-      if (statusFilter !== "all") {
-        if (statusFilter === "low_stock" && item.status !== "low_stock")
-          return false;
-        if (statusFilter === "out_of_stock" && item.status !== "out_of_stock")
-          return false;
-        if (statusFilter === "in_stock" && item.status !== "in_stock")
-          return false;
-      }
-      return true;
-    }) || [];
+  const filteredData = data?.filter((item) => {
+    if (search) {
+      const searchLower = search.toLowerCase();
+      const productName = item.product?.name?.toLowerCase() || "";
+      if (!productName.includes(searchLower)) return false;
+    }
+    if (statusFilter !== "all") {
+      if (statusFilter === "low_stock" && item.status !== "low_stock") return false;
+      if (statusFilter === "out_of_stock" && item.status !== "out_of_stock") return false;
+      if (statusFilter === "in_stock" && item.status !== "in_stock") return false;
+    }
+    return true;
+  }) || [];
 
-  const lowStockCount =
-    data?.filter(
-      (item) => item.status === "low_stock" || item.status === "out_of_stock"
-    ).length || 0;
+  const lowStockCount = data?.filter((item) => item.status === "low_stock" || item.status === "out_of_stock").length || 0;
   const totalItems = data?.length || 0;
-  const totalQuantity =
-    data?.reduce((sum: number, item) => sum + item.quantity, 0) || 0;
+  const totalQuantity = data?.reduce((sum: number, item) => sum + item.quantity, 0) || 0;
 
   const handleAdjustStock = () => {
     if (!selectedItem || !adjustQuantity) {
@@ -286,9 +226,7 @@ export default function ManagerInventoryPage() {
       render: (item: LocalInventoryItem) => (
         <div>
           <p className="font-medium">{item.product?.name || "N/A"}</p>
-          <p className="text-xs text-stone-500">
-            ID: {item.productId.slice(-8)}
-          </p>
+          <p className="text-xs text-stone-500">ID: {item.productId.slice(-8)}</p>
         </div>
       ),
     },
@@ -354,10 +292,7 @@ export default function ManagerInventoryPage() {
       <PageShell>
         <PageHeader
           title="Quản lý tồn kho"
-          breadcrumbs={[
-            { label: "Dashboard", href: "/manager" },
-            { label: "Tồn kho" },
-          ]}
+          breadcrumbs={[{ label: "Dashboard", href: "/manager" }, { label: "Tồn kho" }]}
         />
         <EmptyState
           title="Bạn chưa được gán cho chi nhánh nào"
@@ -420,9 +355,7 @@ export default function ManagerInventoryPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-amber-600">
-                {lowStockCount}
-              </p>
+              <p className="text-3xl font-bold text-amber-600">{lowStockCount}</p>
             </CardContent>
           </Card>
         </div>
@@ -485,9 +418,7 @@ export default function ManagerInventoryPage() {
             <div className="space-y-4">
               <div>
                 <p className="text-sm text-stone-600 mb-1">Sản phẩm</p>
-                <p className="font-medium">
-                  {selectedItem.product?.name || "N/A"}
-                </p>
+                <p className="font-medium">{selectedItem.product?.name || "N/A"}</p>
               </div>
               <div>
                 <p className="text-sm text-stone-600 mb-1">Tồn kho hiện tại</p>
@@ -545,16 +476,12 @@ export default function ManagerInventoryPage() {
         >
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-2">
-                Chọn sản phẩm
-              </label>
+              <label className="block text-sm font-medium mb-2">Chọn sản phẩm</label>
               <select
                 className="w-full px-3 py-2 border border-stone-300 rounded-lg"
                 value={selectedProduct?.id || ""}
                 onChange={(e) => {
-                  const product = availableProducts.find(
-                    (p) => p.id === e.target.value
-                  );
+                  const product = availableProducts.find((p) => p.id === e.target.value);
                   setSelectedProduct(product || null);
                 }}
               >
@@ -563,38 +490,25 @@ export default function ManagerInventoryPage() {
                   .filter((p) => !data?.some((item) => item.productId === p.id))
                   .map((product) => (
                     <option key={product.id} value={product.id}>
-                      {product.name} - {product.price?.toLocaleString("vi-VN")}{" "}
-                      ₫
+                      {product.name} - {product.price?.toLocaleString("vi-VN")} ₫
                     </option>
                   ))}
               </select>
-              {productsData &&
-                availableProducts.filter(
-                  (p) => !data?.some((item) => item.productId === p.id)
-                ).length === 0 && (
-                  <p className="text-sm text-stone-500 mt-2">
-                    Tất cả sản phẩm đã có trong kho
-                  </p>
-                )}
+              {productsData && availableProducts.filter((p) => !data?.some((item) => item.productId === p.id)).length === 0 && (
+                <p className="text-sm text-stone-500 mt-2">Tất cả sản phẩm đã có trong kho</p>
+              )}
             </div>
 
             {selectedProduct && (
               <>
                 {/* MANAGER: Chỉ chọn product để nhập kho, không sửa giá/tên/mô tả */}
                 <div className="p-3 bg-secondary-50 rounded-md border border-secondary-200">
-                  <p className="text-sm text-stone-600 mb-1">
-                    Sản phẩm đã chọn
-                  </p>
-                  <p className="font-medium text-secondary-900">
-                    {selectedProduct.name}
-                  </p>
+                  <p className="text-sm text-stone-600 mb-1">Sản phẩm đã chọn</p>
+                  <p className="font-medium text-secondary-900">{selectedProduct.name}</p>
                   <div className="mt-2 text-xs text-secondary-500 space-y-1">
-                    <p>
-                      Giá: {selectedProduct.price?.toLocaleString("vi-VN")} ₫
-                    </p>
+                    <p>Giá: {selectedProduct.price?.toLocaleString("vi-VN")} ₫</p>
                     <p className="text-xs text-secondary-400 italic">
-                      💡 Manager chỉ chọn sản phẩm để nhập kho, không thể sửa
-                      thông tin sản phẩm
+                      💡 Manager chỉ chọn sản phẩm để nhập kho, không thể sửa thông tin sản phẩm
                     </p>
                   </div>
                 </div>
@@ -659,3 +573,4 @@ export default function ManagerInventoryPage() {
     </PageShell>
   );
 }
+

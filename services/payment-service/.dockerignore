@@ -1,4 +1,4 @@
-# Payment Service .dockerignore
+﻿# Payment Service .dockerignore
 services/*
 !services/payment-service/
 frontend/

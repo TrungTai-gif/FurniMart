@@ -4,7 +4,7 @@ services:
     container_name: furnimart-mongodb
     restart: unless-stopped
     ports:
-      - "27017:27017"
+      - '27017:27017'
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: admin123
@@ -14,7 +14,7 @@ services:
     networks:
       - furnimart-network
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", 'db.adminCommand("ping")']
+      test: ['CMD', 'mongosh', '--quiet', '--eval', 'db.adminCommand("ping")', '-u', 'admin', '-p', 'admin123', '--authenticationDatabase', 'admin']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -28,7 +28,7 @@ services:
     container_name: furnimart-api-gateway
     restart: unless-stopped
     ports:
-      - "3001:3001"
+      - '3001:3001'
     environment:
       PORT: 3001
       NODE_ENV: ${NODE_ENV:-production}
@@ -53,34 +53,46 @@ services:
       CART_SERVICE_URL: http://cart-service:3019
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:3001}
     depends_on:
-      - auth-service
-      - user-service
-      - product-service
-      - order-service
-      - shipping-service
-      - review-service
-      - chat-service
-      - warehouse-service
-      - dispute-service
-      - settings-service
-      - upload-service
-      - category-service
-      - dashboard-service
-      - payment-service
-      - promotion-service
-      - branch-service
-      - wallet-service
-      - cart-service
+      auth-service:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+      product-service:
+        condition: service_healthy
+      order-service:
+        condition: service_healthy
+      shipping-service:
+        condition: service_healthy
+      review-service:
+        condition: service_healthy
+      chat-service:
+        condition: service_healthy
+      warehouse-service:
+        condition: service_healthy
+      dispute-service:
+        condition: service_healthy
+      settings-service:
+        condition: service_healthy
+      upload-service:
+        condition: service_healthy
+      category-service:
+        condition: service_healthy
+      dashboard-service:
+        condition: service_healthy
+      payment-service:
+        condition: service_healthy
+      promotion-service:
+        condition: service_healthy
+      branch-service:
+        condition: service_healthy
+      wallet-service:
+        condition: service_healthy
+      cart-service:
+        condition: service_healthy
     networks:
       - furnimart-network
     healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "require('http').get('http://localhost:3001/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
-        ]
+      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3001/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -93,7 +105,7 @@ services:
     container_name: furnimart-auth-service
     restart: unless-stopped
     ports:
-      - "3002:3002"
+      - '3002:3002'
     environment:
       PORT: 3002
       NODE_ENV: ${NODE_ENV:-production}
@@ -105,13 +117,7 @@ services:
     networks:
       - furnimart-network
     healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "require('http').get('http://localhost:3002/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
-        ]
+      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3002/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -124,7 +130,7 @@ services:
     container_name: furnimart-user-service
     restart: unless-stopped
     ports:
-      - "3003:3003"
+      - '3003:3003'
     environment:
       PORT: 3003
       NODE_ENV: ${NODE_ENV:-production}
@@ -136,13 +142,7 @@ services:
     networks:
       - furnimart-network
     healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "require('http').get('http://localhost:3003/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
-        ]
+      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3003/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -155,7 +155,7 @@ services:
     container_name: furnimart-product-service
     restart: unless-stopped
     ports:
-      - "3004:3004"
+      - '3004:3004'
     environment:
       PORT: 3004
       NODE_ENV: ${NODE_ENV:-production}
@@ -167,13 +167,7 @@ services:
     networks:
       - furnimart-network
     healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "require('http').get('http://localhost:3004/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
-        ]
+      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3004/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -186,25 +180,24 @@ services:
     container_name: furnimart-order-service
     restart: unless-stopped
     ports:
-      - "3005:3005"
+      - '3005:3005'
     environment:
       PORT: 3005
       NODE_ENV: ${NODE_ENV:-production}
       MONGODB_URI: mongodb://admin:admin123@mongodb:27017/furnimart?authSource=admin
       JWT_SECRET: ${JWT_SECRET:-furnimart-secret-key-2024}
+      BRANCH_SERVICE_URL: http://branch-service:3017
+      PRODUCT_SERVICE_URL: http://product-service:3004
+      USER_SERVICE_URL: http://user-service:3003
+      WAREHOUSE_SERVICE_URL: http://warehouse-service:3009
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:-furnimart-internal-secret-2024}
     depends_on:
       mongodb:
         condition: service_healthy
     networks:
       - furnimart-network
     healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "require('http').get('http://localhost:3005/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
-        ]
+      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3005/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -217,7 +210,7 @@ services:
     container_name: furnimart-shipping-service
     restart: unless-stopped
     ports:
-      - "3006:3006"
+      - '3006:3006'
     environment:
       PORT: 3006
       NODE_ENV: ${NODE_ENV:-production}
@@ -229,13 +222,7 @@ services:
     networks:
       - furnimart-network
     healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "require('http').get('http://localhost:3006/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
-        ]
+      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3006/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -248,7 +235,7 @@ services:
     container_name: furnimart-review-service
     restart: unless-stopped
     ports:
-      - "3007:3007"
+      - '3007:3007'
     environment:
       PORT: 3007
       NODE_ENV: ${NODE_ENV:-production}
@@ -260,13 +247,7 @@ services:
     networks:
       - furnimart-network
     healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "require('http').get('http://localhost:3007/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
-        ]
+      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3007/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -279,7 +260,7 @@ services:
     container_name: furnimart-chat-service
     restart: unless-stopped
     ports:
-      - "3008:3008"
+      - '3008:3008'
     environment:
       PORT: 3008
       NODE_ENV: ${NODE_ENV:-production}
@@ -291,13 +272,7 @@ services:
     networks:
       - furnimart-network
     healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "require('http').get('http://localhost:3008/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
-        ]
+      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3008/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -310,7 +285,7 @@ services:
     container_name: furnimart-warehouse-service
     restart: unless-stopped
     ports:
-      - "3009:3009"
+      - '3009:3009'
     environment:
       PORT: 3009
       NODE_ENV: ${NODE_ENV:-production}
@@ -322,13 +297,7 @@ services:
     networks:
       - furnimart-network
     healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "require('http').get('http://localhost:3009/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
-        ]
+      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3009/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -341,7 +310,7 @@ services:
     container_name: furnimart-dispute-service
     restart: unless-stopped
     ports:
-      - "3010:3010"
+      - '3010:3010'
     environment:
       PORT: 3010
       NODE_ENV: ${NODE_ENV:-production}
@@ -353,13 +322,7 @@ services:
     networks:
       - furnimart-network
     healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "require('http').get('http://localhost:3010/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
-        ]
+      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3010/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -372,7 +335,7 @@ services:
     container_name: furnimart-settings-service
     restart: unless-stopped
     ports:
-      - "3011:3011"
+      - '3011:3011'
     environment:
       PORT: 3011
       NODE_ENV: ${NODE_ENV:-production}
@@ -384,13 +347,7 @@ services:
     networks:
       - furnimart-network
     healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "require('http').get('http://localhost:3011/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
-        ]
+      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3011/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -403,25 +360,22 @@ services:
     container_name: furnimart-upload-service
     restart: unless-stopped
     ports:
-      - "3012:3012"
+      - '3012:3012'
     environment:
       PORT: 3012
       NODE_ENV: ${NODE_ENV:-production}
       MONGODB_URI: mongodb://admin:admin123@mongodb:27017/furnimart?authSource=admin
       JWT_SECRET: ${JWT_SECRET:-furnimart-secret-key-2024}
+    volumes:
+      - images_data:/app/images
+      - uploads_data:/app/uploads  # Keep for backward compatibility
     depends_on:
       mongodb:
         condition: service_healthy
     networks:
       - furnimart-network
     healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "require('http').get('http://localhost:3012/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
-        ]
+      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3012/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -434,7 +388,7 @@ services:
     container_name: furnimart-category-service
     restart: unless-stopped
     ports:
-      - "3013:3013"
+      - '3013:3013'
     environment:
       PORT: 3013
       NODE_ENV: ${NODE_ENV:-production}
@@ -446,13 +400,7 @@ services:
     networks:
       - furnimart-network
     healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "require('http').get('http://localhost:3013/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
-        ]
+      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3013/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -465,7 +413,7 @@ services:
     container_name: furnimart-dashboard-service
     restart: unless-stopped
     ports:
-      - "3014:3014"
+      - '3014:3014'
     environment:
       PORT: 3014
       NODE_ENV: ${NODE_ENV:-production}
@@ -477,13 +425,7 @@ services:
     networks:
       - furnimart-network
     healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "require('http').get('http://localhost:3014/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
-        ]
+      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3014/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -496,11 +438,11 @@ services:
     container_name: furnimart-payment-service
     restart: unless-stopped
     ports:
-      - "3015:3015"
+      - '3015:3015'
     environment:
       PORT: 3015
       NODE_ENV: ${NODE_ENV:-production}
-      MONGODB_URI: ${MONGODB_URI:-mongodb://admin:admin123@mongodb:27017/furnimart?authSource=admin}
+      MONGODB_URI: mongodb://admin:admin123@mongodb:27017/furnimart?authSource=admin
       JWT_SECRET: ${JWT_SECRET:-furnimart-secret-key-2024}
       # VNPAY Configuration
       VNP_TMN_CODE: ${VNP_TMN_CODE:-7MFQRM1G}
@@ -508,22 +450,18 @@ services:
       VNP_URL: ${VNP_URL:-https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
       VNP_RETURN_URL: ${VNP_RETURN_URL:-http://localhost:3000/payment/return}
       VNP_IPN_URL: ${VNP_IPN_URL:-}
-      VNP_PUBLIC_IP: ${VNP_PUBLIC_IP:-14.174.198.182}
+      VNP_PUBLIC_IP: ${VNP_PUBLIC_IP:-14.243.185.38}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       API_GATEWAY_URL: ${API_GATEWAY_URL:-http://api-gateway:3001}
+      ORDER_SERVICE_URL: ${ORDER_SERVICE_URL:-http://order-service:3005}
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:-furnimart-internal-secret-2024}
     depends_on:
       mongodb:
         condition: service_healthy
     networks:
       - furnimart-network
     healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "require('http').get('http://localhost:3015/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
-        ]
+      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3015/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -536,11 +474,11 @@ services:
     container_name: furnimart-promotion-service
     restart: unless-stopped
     ports:
-      - "3016:3016"
+      - '3016:3016'
     environment:
       PORT: 3016
       NODE_ENV: ${NODE_ENV:-production}
-      MONGODB_URI: ${MONGODB_URI:-mongodb://admin:admin123@mongodb:27017/furnimart?authSource=admin}
+      MONGODB_URI: mongodb://admin:admin123@mongodb:27017/furnimart?authSource=admin
       JWT_SECRET: ${JWT_SECRET:-furnimart-secret-key-2024}
     depends_on:
       mongodb:
@@ -548,13 +486,7 @@ services:
     networks:
       - furnimart-network
     healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "require('http').get('http://localhost:3016/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
-        ]
+      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3016/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -567,11 +499,11 @@ services:
     container_name: furnimart-branch-service
     restart: unless-stopped
     ports:
-      - "3017:3017"
+      - '3017:3017'
     environment:
       PORT: 3017
       NODE_ENV: ${NODE_ENV:-production}
-      MONGODB_URI: ${MONGODB_URI:-mongodb://admin:admin123@mongodb:27017/furnimart?authSource=admin}
+      MONGODB_URI: mongodb://admin:admin123@mongodb:27017/furnimart?authSource=admin
       JWT_SECRET: ${JWT_SECRET:-furnimart-secret-key-2024}
     depends_on:
       mongodb:
@@ -579,13 +511,7 @@ services:
     networks:
       - furnimart-network
     healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "require('http').get('http://localhost:3017/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
-        ]
+      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3017/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -598,25 +524,28 @@ services:
     container_name: furnimart-wallet-service
     restart: unless-stopped
     ports:
-      - "3018:3018"
+      - '3018:3018'
     environment:
       PORT: 3018
       NODE_ENV: ${NODE_ENV:-production}
-      MONGODB_URI: ${MONGODB_URI:-mongodb://admin:admin123@mongodb:27017/furnimart?authSource=admin}
+      MONGODB_URI: mongodb://admin:admin123@mongodb:27017/furnimart?authSource=admin
       JWT_SECRET: ${JWT_SECRET:-furnimart-secret-key-2024}
+      # VNPAY Configuration
+      VNP_TMN_CODE: ${VNP_TMN_CODE:-7MFQRM1G}
+      VNP_HASH_SECRET: ${VNP_HASH_SECRET:-HUOUL72ZW06UZRY5ZG6D8QARXPQ1ZDDR}
+      VNP_URL: ${VNP_URL:-https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
+      VNP_RETURN_URL: ${VNP_RETURN_URL_WALLET:-${VNP_RETURN_URL:-http://localhost:3000/wallet/deposit/return}}
+      VNP_IPN_URL: ${VNP_IPN_URL_WALLET:-${VNP_IPN_URL:-}}
+      VNP_PUBLIC_IP: ${VNP_PUBLIC_IP:-14.243.185.38}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      API_GATEWAY_URL: ${API_GATEWAY_URL:-http://api-gateway:3001}
     depends_on:
       mongodb:
         condition: service_healthy
     networks:
       - furnimart-network
     healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "require('http').get('http://localhost:3018/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
-        ]
+      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3018/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -629,11 +558,11 @@ services:
     container_name: furnimart-cart-service
     restart: unless-stopped
     ports:
-      - "3019:3019"
+      - '3019:3019'
     environment:
       PORT: 3019
       NODE_ENV: ${NODE_ENV:-production}
-      MONGODB_URI: ${MONGODB_URI:-mongodb://admin:admin123@mongodb:27017/furnimart?authSource=admin}
+      MONGODB_URI: mongodb://admin:admin123@mongodb:27017/furnimart?authSource=admin
       JWT_SECRET: ${JWT_SECRET:-furnimart-secret-key-2024}
     depends_on:
       mongodb:
@@ -641,13 +570,7 @@ services:
     networks:
       - furnimart-network
     healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "require('http').get('http://localhost:3019/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
-        ]
+      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3019/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -658,31 +581,29 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        # Client-side: browser needs to access API Gateway via host
-        # Use host.docker.internal for Docker Desktop, or actual host IP
+        # Build-time: NEXT_PUBLIC_* vars are embedded in the build
+        # For local dev: http://localhost:3001/api (browser accesses host)
+        # For Docker network: http://api-gateway:3001/api (only if frontend runs in Docker)
+        # NOTE: Browser makes requests, so use host-accessible URL
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api}
     container_name: furnimart-frontend
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - '3000:3000'
     environment:
-      # API Gateway URL for client-side requests (browser)
-      # In Docker: use host IP or localhost if accessing from host machine
-      # For production: use your production API Gateway URL
+      # Runtime: NEXT_PUBLIC_* vars are already baked into build
+      # This is only for reference - actual value comes from build args
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api}
+    volumes:
+      # Mount images volume to public/images for Next.js to serve static files
+      - images_data:/app/public/images
     depends_on:
       api-gateway:
         condition: service_healthy
     networks:
       - furnimart-network
     healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
-        ]
+      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -690,6 +611,8 @@ services:
 
 volumes:
   mongodb_data:
+  uploads_data:
+  images_data:
 
 networks:
   furnimart-network:

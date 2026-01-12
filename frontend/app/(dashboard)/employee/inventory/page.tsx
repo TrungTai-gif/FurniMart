@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/authStore";
 import { branchService } from "@/services/branchService";
-import { warehouseService } from "@/services/warehouseService";
 import PageShell from "@/components/layouts/PageShell";
 import PageHeader from "@/components/layouts/PageHeader";
 import DataTable from "@/components/dashboard/DataTable";
@@ -38,96 +37,27 @@ export default function EmployeeInventoryPage() {
 
   const { data, isLoading, isError, refetch } = useQuery<LocalInventoryItem[]>({
     queryKey: ["employee", "inventory", branchId],
-    queryFn: async () => {
-      let inventoryItems: LocalInventoryItem[] = [];
-
-      // Try to get inventory from branch service first
-      try {
-        const branchInventory = await branchService.getBranchInventory(
-          branchId || ""
-        );
-        if (branchInventory && branchInventory.length > 0) {
-          inventoryItems = branchInventory as unknown as LocalInventoryItem[];
-        }
-      } catch (error) {
-        console.log("Branch inventory not available, trying warehouse service");
-      }
-
-      // If no branch inventory, try warehouse service as fallback
-      if (inventoryItems.length === 0) {
-        try {
-          const warehouseInventory = await warehouseService.getInventory(
-            branchId || undefined
-          );
-          inventoryItems = warehouseInventory.map((item) => {
-            const availableQuantity = item.availableQuantity || 0;
-            const minStockLevel = item.minStockLevel || 10;
-
-            // Calculate status: out_of_stock, low_stock, or in_stock
-            let status: "in_stock" | "low_stock" | "out_of_stock";
-            if (availableQuantity === 0) {
-              status = "out_of_stock";
-            } else if (availableQuantity <= minStockLevel) {
-              status = "low_stock";
-            } else {
-              status = "in_stock";
-            }
-
-            return {
-              id: item.id,
-              productId: item.productId,
-              product: item.product || {
-                id: item.productId,
-                name: (item as any).productName || "N/A",
-              },
-              quantity: item.quantity || 0,
-              reservedQuantity: item.reservedQuantity || 0,
-              availableQuantity,
-              minStockLevel,
-              maxStockLevel: item.maxStockLevel || 100,
-              location: item.location || "Kho chính",
-              status,
-              lastUpdated:
-                (item as { updatedAt?: string }).updatedAt ||
-                new Date().toISOString(),
-            };
-          }) as LocalInventoryItem[];
-        } catch (error) {
-          console.error("Error fetching inventory:", error);
-          return [];
-        }
-      }
-
-      return inventoryItems;
-    },
+    queryFn: () => branchService.getBranchInventory(branchId || "") as unknown as Promise<LocalInventoryItem[]>,
     enabled: !!branchId,
   });
 
-  const filteredData =
-    data?.filter((item) => {
-      if (search) {
-        const searchLower = search.toLowerCase();
-        const productName = item.product?.name?.toLowerCase() || "";
-        if (!productName.includes(searchLower)) return false;
-      }
-      if (statusFilter !== "all") {
-        if (statusFilter === "low_stock" && item.status !== "low_stock")
-          return false;
-        if (statusFilter === "out_of_stock" && item.status !== "out_of_stock")
-          return false;
-        if (statusFilter === "in_stock" && item.status !== "in_stock")
-          return false;
-      }
-      return true;
-    }) || [];
+  const filteredData = data?.filter((item) => {
+    if (search) {
+      const searchLower = search.toLowerCase();
+      const productName = item.product?.name?.toLowerCase() || "";
+      if (!productName.includes(searchLower)) return false;
+    }
+    if (statusFilter !== "all") {
+      if (statusFilter === "low_stock" && item.status !== "low_stock") return false;
+      if (statusFilter === "out_of_stock" && item.status !== "out_of_stock") return false;
+      if (statusFilter === "in_stock" && item.status !== "in_stock") return false;
+    }
+    return true;
+  }) || [];
 
-  const lowStockCount =
-    data?.filter(
-      (item) => item.status === "low_stock" || item.status === "out_of_stock"
-    ).length || 0;
+  const lowStockCount = data?.filter((item) => item.status === "low_stock" || item.status === "out_of_stock").length || 0;
   const totalItems = data?.length || 0;
-  const totalQuantity =
-    data?.reduce((sum: number, item) => sum + item.quantity, 0) || 0;
+  const totalQuantity = data?.reduce((sum: number, item) => sum + item.quantity, 0) || 0;
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -149,9 +79,7 @@ export default function EmployeeInventoryPage() {
       render: (item: LocalInventoryItem) => (
         <div>
           <p className="font-medium">{item.product?.name || "N/A"}</p>
-          <p className="text-xs text-stone-500">
-            ID: {item.productId.slice(-8)}
-          </p>
+          <p className="text-xs text-stone-500">ID: {item.productId.slice(-8)}</p>
         </div>
       ),
     },
@@ -199,10 +127,7 @@ export default function EmployeeInventoryPage() {
       <PageShell>
         <PageHeader
           title="Tồn kho"
-          breadcrumbs={[
-            { label: "Dashboard", href: "/employee" },
-            { label: "Tồn kho" },
-          ]}
+          breadcrumbs={[{ label: "Dashboard", href: "/employee" }, { label: "Tồn kho" }]}
         />
         <EmptyState
           title="Bạn chưa được gán cho chi nhánh nào"
@@ -253,9 +178,7 @@ export default function EmployeeInventoryPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-amber-600">
-                {lowStockCount}
-              </p>
+              <p className="text-3xl font-bold text-amber-600">{lowStockCount}</p>
             </CardContent>
           </Card>
         </div>
@@ -306,3 +229,4 @@ export default function EmployeeInventoryPage() {
     </PageShell>
   );
 }
+

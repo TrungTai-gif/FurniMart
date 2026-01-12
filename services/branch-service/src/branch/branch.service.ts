@@ -112,33 +112,18 @@ export class BranchService {
       
       // Map to inventory item format expected by frontend
       const inventory = Array.isArray(response.data) ? response.data : [response.data];
-      return inventory.map((item: any) => {
-        const availableQuantity = item.availableQuantity || 0;
-        const minStockLevel = item.minStockLevel || 10;
-        
-        // Calculate status based on available quantity
-        let status: 'in_stock' | 'low_stock' | 'out_of_stock';
-        if (availableQuantity === 0) {
-          status = 'out_of_stock';
-        } else if (availableQuantity <= minStockLevel) {
-          status = 'low_stock';
-        } else {
-          status = 'in_stock';
-        }
-        
-        return {
-          id: item._id || item.id,
-          productId: item.productId,
-          product: { name: item.productName },
-          quantity: item.quantity || 0,
-          availableQuantity,
-          reservedQuantity: item.reservedQuantity || 0,
-          minStockLevel,
-          maxStockLevel: item.maxStockLevel || 100,
-          location: item.location || 'Kho chính',
-          status,
-        };
-      });
+      return inventory.map((item: any) => ({
+        id: item._id || item.id,
+        productId: item.productId,
+        product: { name: item.productName },
+        quantity: item.quantity || 0,
+        availableQuantity: item.availableQuantity || 0,
+        reservedQuantity: item.reservedQuantity || 0,
+        minStockLevel: item.minStockLevel || 10,
+        maxStockLevel: item.maxStockLevel || 100,
+        location: item.location || 'Kho chính',
+        status: item.availableQuantity > item.minStockLevel ? 'in_stock' : 'low_stock',
+      }));
     } catch (error) {
       // If warehouse service is not available, return empty array
       return [];
