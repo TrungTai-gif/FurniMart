@@ -53,12 +53,13 @@ export class Order {
   paymentMethod!: string;
 
   // Payment status (0.3): UNPAID, PAID, REFUND_PENDING, REFUNDED, FAILED
+  @Prop({ 
+    default: 'UNPAID',
+    enum: ['UNPAID', 'PAID', 'REFUND_PENDING', 'REFUNDED', 'FAILED'],
+    uppercase: true
+  })
+  paymentStatus!: string;
 
-  @Prop({ default: false })
-  isPaid!: boolean; // Legacy field, use paymentStatus instead
-
-  @Prop()
-  notes?: string;
 
   @Prop({ type: MongooseSchema.Types.ObjectId })
   shipperId?: string;
@@ -83,19 +84,6 @@ export class Order {
 
   @Prop()
   cancelledAt?: Date;
-
-  @Prop()
-  cancelReason?: string;
-
-  @Prop({ type: MongooseSchema.Types.ObjectId })
-  promotionId?: string;
-
-  @Prop()
-  promotionCode?: string;
-  
-  // Delivery confirmation (for SHIPPER - 6)
-  @Prop()
-  deliveryConfirmation?: string; // OTP, signature, photo URL, etc.
   
   @Prop()
   deliveryNotes?: string; // Notes from shipper
