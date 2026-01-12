@@ -44,7 +44,13 @@ export class Order {
   // Standardized order status flow (0.2): 
   // PENDING_CONFIRMATION → CONFIRMED → PACKING → READY_TO_SHIP → SHIPPING → DELIVERED → COMPLETED
   // Error branch: CANCELLED, FAILED_DELIVERY, RETURNING, RETURNED
-
+  @Prop({ 
+    default: 'PENDING_CONFIRMATION', 
+    enum: [
+      'PENDING_CONFIRMATION', 'CONFIRMED', 'PACKING', 'READY_TO_SHIP', 
+      'SHIPPING', 'DELIVERED', 'COMPLETED',
+      'CANCELLED', 'FAILED_DELIVERY', 'RETURNING', 'RETURNED'
+    ],
     uppercase: true 
   })
   status!: string;
@@ -60,6 +66,11 @@ export class Order {
   })
   paymentStatus!: string;
 
+  @Prop({ default: false })
+  isPaid!: boolean; // Legacy field, use paymentStatus instead
+
+  @Prop()
+  notes?: string;
 
   @Prop({ type: MongooseSchema.Types.ObjectId })
   shipperId?: string;
@@ -84,6 +95,19 @@ export class Order {
 
   @Prop()
   cancelledAt?: Date;
+
+  @Prop()
+  cancelReason?: string;
+
+  @Prop({ type: MongooseSchema.Types.ObjectId })
+  promotionId?: string;
+
+  @Prop()
+  promotionCode?: string;
+  
+  // Delivery confirmation (for SHIPPER - 6)
+  @Prop()
+  deliveryConfirmation?: string; // OTP, signature, photo URL, etc.
   
   @Prop()
   deliveryNotes?: string; // Notes from shipper
