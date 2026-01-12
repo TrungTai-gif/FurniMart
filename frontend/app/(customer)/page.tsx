@@ -82,7 +82,11 @@ export default function HomePage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-white shadow-2xl rounded-2xl p-6 border border-secondary-100">
               {[
                 { label: "Khách Hàng", value: "25K+", note: "Khắp Việt Nam" },
-                { label: "Bộ Sưu Tập", value: "1.2K", note: "Phong cách đa dạng" },
+                {
+                  label: "Bộ Sưu Tập",
+                  value: "1.2K",
+                  note: "Phong cách đa dạng",
+                },
                 { label: "Đánh Giá", value: "4.9/5", note: "Uy tín lâu dài" },
               ].map((item) => (
                 <div key={item.label} className="text-center">
@@ -92,9 +96,7 @@ export default function HomePage() {
                   <p className="text-xs uppercase tracking-widest text-secondary-400 mt-1">
                     {item.label}
                   </p>
-                  <p className="text-sm text-secondary-600 mt-2">
-                    {item.note}
-                  </p>
+                  <p className="text-sm text-secondary-600 mt-2">{item.note}</p>
                 </div>
               ))}
             </div>
