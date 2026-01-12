@@ -1,7 +1,7 @@
 {
-  "name": "@furnimart/warehouse-service",
+  "name": "@furnimart/chat-service",
   "version": "1.0.0",
-  "description": "FurniMart warehouse-service",
+  "description": "FurniMart chat-service",
   "main": "dist/main.js",
   "scripts": {
     "prebuild": "rimraf dist",

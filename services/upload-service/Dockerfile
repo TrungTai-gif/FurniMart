@@ -26,22 +26,22 @@ RUN npm run build
 RUN npm pack
 RUN mv furnimart-shared-1.0.0.tgz ../shared.tgz
 
-# Setup warehouse-service
+# Setup upload-service
 WORKDIR /app
-COPY services/warehouse-service/package*.json ./
+COPY services/upload-service/package*.json ./
 RUN (npm ci --no-audit --no-fund 2>/dev/null) || npm install --no-audit --no-fund
 
 # Install packed shared package
 RUN npm install ./shared.tgz --no-save
 
-# Copy warehouse-service source
-COPY services/warehouse-service ./
+# Copy upload-service source
+COPY services/upload-service ./
 
 # Copy shared dist to match tsconfig path alias (../../shared/dist from service perspective)
 # From /app, ../../shared/dist = /shared/dist
 RUN mkdir -p /shared && cp -r /app/shared/dist /shared/dist
 
-# Build warehouse-service
+# Build upload-service
 RUN npm run build
 
 FROM node:22-alpine
@@ -55,7 +55,7 @@ RUN npm config set fetch-timeout 300000 && \
     npm config set fetch-retry-maxtimeout 120000
 
 # Copy package files
-COPY services/warehouse-service/package*.json ./
+COPY services/upload-service/package*.json ./
 
 # Install production dependencies
 RUN for i in 1 2 3 4 5; do \
@@ -73,6 +73,11 @@ RUN mkdir -p /shared && ln -s /app/node_modules/@furnimart/shared/dist /shared/d
 # Copy built application
 COPY --from=builder /app/dist ./dist
 
-EXPOSE 3009
+# Create images directory structure (primary)
+RUN mkdir -p /app/images/products /app/images/files /app/images/hero /app/images/categories /app/images/logos /app/images/users
+# Keep uploads for backward compatibility
+RUN mkdir -p /app/uploads/products /app/uploads/files /app/uploads/hero /app/uploads/categories
+
+EXPOSE 3012
 
 CMD ["node", "dist/main.js"]

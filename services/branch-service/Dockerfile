@@ -26,22 +26,22 @@ RUN npm run build
 RUN npm pack
 RUN mv furnimart-shared-1.0.0.tgz ../shared.tgz
 
-# Setup warehouse-service
+# Setup branch-service
 WORKDIR /app
-COPY services/warehouse-service/package*.json ./
+COPY services/branch-service/package*.json ./
 RUN (npm ci --no-audit --no-fund 2>/dev/null) || npm install --no-audit --no-fund
 
 # Install packed shared package
 RUN npm install ./shared.tgz --no-save
 
-# Copy warehouse-service source
-COPY services/warehouse-service ./
+# Copy branch-service source
+COPY services/branch-service ./
 
 # Copy shared dist to match tsconfig path alias (../../shared/dist from service perspective)
 # From /app, ../../shared/dist = /shared/dist
 RUN mkdir -p /shared && cp -r /app/shared/dist /shared/dist
 
-# Build warehouse-service
+# Build branch-service
 RUN npm run build
 
 FROM node:22-alpine
@@ -55,7 +55,7 @@ RUN npm config set fetch-timeout 300000 && \
     npm config set fetch-retry-maxtimeout 120000
 
 # Copy package files
-COPY services/warehouse-service/package*.json ./
+COPY services/branch-service/package*.json ./
 
 # Install production dependencies
 RUN for i in 1 2 3 4 5; do \
@@ -73,6 +73,6 @@ RUN mkdir -p /shared && ln -s /app/node_modules/@furnimart/shared/dist /shared/d
 # Copy built application
 COPY --from=builder /app/dist ./dist
 
-EXPOSE 3009
+EXPOSE 3017
 
 CMD ["node", "dist/main.js"]
