@@ -14,19 +14,6 @@ export class AuditLog {
   @Prop({ required: true })
   description!: string;
 
-  @Prop({
-    type: {
-      id: { type: String, required: true },
-      name: { type: String, required: true },
-      role: { type: String },
-    },
-    required: true,
-  })
-  performedBy!: {
-    id: string;
-    name: string;
-    role?: string;
-  };
 
   @Prop({
     type: [{
@@ -42,12 +29,4 @@ export class AuditLog {
     newValue: string;
   }>;
 
-  @Prop({ type: MongooseSchema.Types.Mixed, default: {} })
-  metadata?: Record<string, any>; // For storing proof images, notes, etc.
-}
-
-export const AuditLogSchema = SchemaFactory.createForClass(AuditLog);
-
-// Index for faster queries
-AuditLogSchema.index({ orderId: 1, createdAt: -1 });
 
