@@ -29,4 +29,12 @@ export class AuditLog {
     newValue: string;
   }>;
 
+  @Prop({ type: MongooseSchema.Types.Mixed, default: {} })
+  metadata?: Record<string, any>; // For storing proof images, notes, etc.
+}
+
+export const AuditLogSchema = SchemaFactory.createForClass(AuditLog);
+
+// Index for faster queries
+AuditLogSchema.index({ orderId: 1, createdAt: -1 });
 
