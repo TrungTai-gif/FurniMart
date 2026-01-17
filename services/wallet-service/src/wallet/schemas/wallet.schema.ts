@@ -1,4 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+
 import { Document } from 'mongoose';
 
 export type WalletDocument = Wallet & Document;
@@ -42,6 +43,10 @@ export class WalletTransaction {
   @Prop({ enum: ['pending', 'completed', 'failed', 'cancelled'], default: 'pending' })
   status!: string;
 
+  // Topup status for VNPAY deposits: CREATED → PENDING → SUCCESS/FAILED/CANCELED/EXPIRED
+  @Prop({ enum: ['CREATED', 'PENDING', 'SUCCESS', 'FAILED', 'CANCELED', 'EXPIRED'], default: 'CREATED' })
+  topupStatus?: string;
+
   @Prop()
   orderId?: string;
 
@@ -71,6 +76,25 @@ export class WalletTransaction {
 
   @Prop()
   adminNote?: string;
+
+  // VNPAY specific fields
+  @Prop()
+  vnpTransactionNo?: string; // VNPAY transaction number for idempotency
+
+  @Prop({ default: false })
+  ipnProcessed?: boolean; // Flag to track if IPN has been processed
+
+  @Prop()
+  vnpResponseCode?: string; // VNPAY response code
+
+  @Prop()
+  vnpTransactionStatus?: string; // VNPAY transaction status
+
+  @Prop()
+  expiresAt?: Date; // Expiration time for pending topup
+
+  @Prop({ type: Object })
+  vnpParams?: Record<string, any>; // Store full VNPAY params for audit
 }
 
 export const WalletSchema = SchemaFactory.createForClass(Wallet);
@@ -80,4 +104,3 @@ WalletSchema.index({ userId: 1 });
 WalletTransactionSchema.index({ walletId: 1, createdAt: -1 });
 WalletTransactionSchema.index({ userId: 1, createdAt: -1 });
 WalletTransactionSchema.index({ orderId: 1 });
-
