@@ -13,12 +13,6 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
 
   // Enable CORS
-  app.enableCors({
-    origin: true,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-  });
 
   // Global Pipes
   app.useGlobalPipes(
@@ -39,13 +33,6 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(new ResponseInterceptor());
 
-  // Swagger Documentation
-  const config = new DocumentBuilder()
-    .setTitle('FurniMart Wallet Service')
-    .setDescription('Escrow Wallet Management Service')
-    .setVersion('1.0.0')
-    .addBearerAuth()
-    .build();
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
