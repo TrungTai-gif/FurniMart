@@ -96,8 +96,7 @@ export class WalletTransaction {
   @Prop({ type: Object })
   vnpParams?: Record<string, any>; // Store full VNPAY params for audit
 }
-@Prop({ type: Object })
-  vnpParams?: Record<string, any>; // Store full VNPAY params for audit
+
 export const WalletSchema = SchemaFactory.createForClass(Wallet);
 export const WalletTransactionSchema = SchemaFactory.createForClass(WalletTransaction);
 
