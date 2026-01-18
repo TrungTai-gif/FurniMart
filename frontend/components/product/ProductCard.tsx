@@ -100,21 +100,22 @@ export default function ProductCard({
         className={cn(
           "bg-white rounded-2xl overflow-hidden h-full flex flex-col",
           "transition-all duration-300 ease-out",
-          "hover:shadow-xl hover:-translate-y-1.5",
-          "border border-secondary-100/80 hover:border-primary-200",
-          "animate-fade-in"
+          "hover:shadow-float hover:-translate-y-2",
+          "border border-secondary-200/60 hover:border-primary-300/60",
+          "hover:ring-1 hover:ring-primary-100",
+          "card-hover-lift animate-fade-in"
         )}
       >
         {/* Image Container */}
-        <div className="relative w-full aspect-[4/5] bg-secondary-50 overflow-hidden">
+        <div className="relative w-full aspect-[4/5] bg-gradient-to-br from-secondary-50 to-secondary-100 overflow-hidden">
           {images[imageIndex] && !imageErrors.has(images[imageIndex]) ? (
             <Image
               src={images[imageIndex]}
               alt={product.name}
               fill
               className={cn(
-                "object-cover transition-transform duration-500 ease-out",
-                isHovered ? "scale-105" : "scale-100"
+                "object-cover transition-transform duration-700 ease-out",
+                isHovered ? "scale-110" : "scale-100"
               )}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               onError={() => {
@@ -132,15 +133,15 @@ export default function ProductCard({
           {showActions && (
             <div
               className={cn(
-                "absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/60 to-transparent",
-                "translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out",
+                "absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/70 via-black/50 to-transparent",
+                "translate-y-full group-hover:translate-y-0 transition-all duration-350 ease-out",
                 "flex gap-2 justify-center opacity-0 group-hover:opacity-100"
               )}
             >
               <Button
                 variant="primary"
                 size="sm"
-                className="w-full shadow-lg rounded-full"
+                className="w-full shadow-lg shadow-primary-500/30 rounded-full font-semibold"
                 onClick={handleAddToCart}
               >
                 <FiShoppingCart className="mr-2" /> Thêm vào giỏ
@@ -153,7 +154,7 @@ export default function ProductCard({
             {discountPercent > 0 && (
               <Badge
                 variant="danger"
-                className="bg-error text-white font-bold shadow-sm rounded-full px-3 py-1 text-xs"
+                className="bg-gradient-to-br from-error to-red-700 text-white font-bold shadow-md shadow-error/30 rounded-full px-3.5 py-1.5 text-xs ring-2 ring-white/20"
               >
                 -{discountPercent}%
               </Badge>
@@ -161,7 +162,7 @@ export default function ProductCard({
             {product.isFeatured && (
               <Badge
                 variant="success"
-                className="bg-accent-500 text-white font-semibold shadow-sm rounded-full px-3 py-1 text-xs"
+                className="bg-gradient-to-br from-accent-500 to-accent-600 text-white font-semibold shadow-md shadow-accent-500/30 rounded-full px-3.5 py-1.5 text-xs ring-2 ring-white/20"
               >
                 HOT
               </Badge>
@@ -171,7 +172,7 @@ export default function ProductCard({
           {showActions && (
             <button
               type="button"
-              className="absolute top-3 right-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-secondary-600 shadow-sm transition hover:text-primary-600 hover:bg-white"
+              className="absolute top-3 right-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/95 backdrop-blur-sm text-secondary-600 shadow-md transition-all duration-300 hover:text-red-500 hover:bg-white hover:scale-110 hover:shadow-lg"
               aria-label="Yêu thích"
             >
               <FiHeart className="h-4 w-4" />
@@ -180,44 +181,44 @@ export default function ProductCard({
         </div>
 
         {/* Content */}
-        <div className="p-5 flex-1 flex flex-col">
+        <div className="p-5 flex-1 flex flex-col bg-white">
           <div className="mb-3">
             {product.category && typeof product.category === "object" && (
-              <p className="text-xs text-secondary-500 mb-1 font-medium tracking-wide uppercase">
+              <p className="text-xs text-primary-600 mb-2 font-semibold tracking-wider uppercase">
                 {product.category.name}
               </p>
             )}
             <h3
               className={cn(
-                "font-semibold text-secondary-900 text-base leading-snug line-clamp-2",
-                "group-hover:text-primary-700 transition-colors duration-200"
+                "font-bold text-secondary-900 text-base leading-snug line-clamp-2 mb-2",
+                "group-hover:text-primary-700 transition-colors duration-300"
               )}
             >
               {product.name}
             </h3>
           </div>
 
-          <div className="mt-auto">
-            <div className="flex items-baseline gap-2 mb-3">
-              <span className="text-lg font-bold text-secondary-900">
+          <div className="mt-auto space-y-3">
+            <div className="flex items-baseline gap-2.5">
+              <span className="text-2xl font-bold text-secondary-900">
                 {formatCurrency(discountedPrice)}
               </span>
               {hasDiscount && (
-                <span className="text-sm text-secondary-400 line-through">
+                <span className="text-sm text-secondary-500 line-through font-semibold">
                   {formatCurrency(product.price)}
                 </span>
               )}
             </div>
 
             {/* Rating & Colors */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between pt-2 border-t border-secondary-100">
               {product.rating ? (
-                <div className="flex items-center gap-1 rounded-full bg-secondary-50 px-2.5 py-1 text-sm text-secondary-600">
-                  <span className="text-accent-500">★</span>
-                  <span className="font-medium">
+                <div className="flex items-center gap-1.5 rounded-full bg-yellow-50 px-3 py-1.5 text-sm text-secondary-900 border border-yellow-200">
+                  <span className="text-yellow-500 text-base font-bold">★</span>
+                  <span className="font-bold text-secondary-900">
                     {product.rating.toFixed(1)}
                   </span>
-                  <span className="text-secondary-400 text-xs">
+                  <span className="text-secondary-600 text-xs font-medium">
                     ({product.reviewCount || 0})
                   </span>
                 </div>
