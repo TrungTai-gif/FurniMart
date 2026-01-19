@@ -107,24 +107,71 @@ export class BranchService {
       if (productId) {
         params.append('productId', productId);
       }
-      const url = `${this.WAREHOUSE_SERVICE_URL}/api/warehouse/inventory?${params.toString()}`;
+      // Use internal endpoint that doesn't require authentication
+      const url = `${this.WAREHOUSE_SERVICE_URL}/api/warehouse/internal/inventory?${params.toString()}`;
       const response = await firstValueFrom(this.httpService.get(url));
       
-      // Map to inventory item format expected by frontend
-      const inventory = Array.isArray(response.data) ? response.data : [response.data];
-      return inventory.map((item: any) => ({
-        id: item._id || item.id,
-        productId: item.productId,
-        product: { name: item.productName },
-        quantity: item.quantity || 0,
-        availableQuantity: item.availableQuantity || 0,
-        reservedQuantity: item.reservedQuantity || 0,
-        minStockLevel: item.minStockLevel || 10,
-        maxStockLevel: item.maxStockLevel || 100,
-        location: item.location || 'Kho chính',
-        status: item.availableQuantity > item.minStockLevel ? 'in_stock' : 'low_stock',
-      }));
-    } catch (error) {
+      // Handle response data - ResponseInterceptor wraps in { success, statusCode, message, data }
+      let rawData = response.data;
+      
+      // Unwrap if wrapped by ResponseInterceptor
+      if (rawData && typeof rawData === 'object' && !Array.isArray(rawData)) {
+        if (rawData.data !== undefined) {
+          rawData = rawData.data;
+        }
+      }
+      
+      // Ensure we have an array
+      const inventory = Array.isArray(rawData) ? rawData : (rawData ? [rawData] : []);
+      
+      // Log raw data for debugging
+      console.log(`[BranchService] Raw inventory data for branch ${branchId}, product ${productId}:`, {
+        fullResponse: response,
+        responseData: response.data,
+        rawData,
+        inventory,
+        inventoryLength: inventory.length,
+      });
+      
+      // If no inventory found, return empty array
+      if (!inventory || inventory.length === 0) {
+        console.log(`[BranchService] No inventory found for branch ${branchId}, product ${productId}`);
+        return [];
+      }
+      
+      return inventory.map((item: any) => {
+        const quantity = item.quantity || 0;
+        const reservedQuantity = item.reservedQuantity || 0;
+        // Use explicit check for availableQuantity - if it's 0, use it; if undefined/null, calculate
+        const availableQuantity = item.availableQuantity !== undefined && item.availableQuantity !== null
+          ? item.availableQuantity
+          : Math.max(0, quantity - reservedQuantity);
+        
+        const mapped = {
+          id: item._id || item.id,
+          productId: item.productId,
+          product: { name: item.productName },
+          quantity,
+          availableQuantity,
+          reservedQuantity,
+          minStockLevel: item.minStockLevel || 10,
+          maxStockLevel: item.maxStockLevel || 100,
+          location: item.location || 'Kho chính',
+          status: availableQuantity > (item.minStockLevel || 10) ? 'in_stock' : 'low_stock',
+        };
+        
+        console.log(`[BranchService] Mapped inventory item:`, mapped);
+        return mapped;
+      });
+    } catch (error: any) {
+      // Log error for debugging
+      console.error(`[BranchService] Error fetching inventory for branch ${branchId}, product ${productId}:`, {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        url: error.config?.url,
+        stack: error.stack,
+      });
       // If warehouse service is not available, return empty array
       return [];
     }
