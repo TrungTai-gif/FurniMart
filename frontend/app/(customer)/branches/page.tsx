@@ -12,7 +12,12 @@ import ErrorState from "@/components/ui/ErrorState";
 import { routes } from "@/lib/config/routes";
 
 export default function BranchesPage() {
-  const { data: branches, isLoading, isError, refetch } = useQuery({
+  const {
+    data: branches,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ["branches"],
     queryFn: () => branchService.getBranches(),
   });
@@ -21,7 +26,10 @@ export default function BranchesPage() {
     <PageShell>
       <PageHeader
         title="Chi nhánh"
-        breadcrumbs={[{ label: "Trang chủ", href: routes.home }, { label: "Chi nhánh" }]}
+        breadcrumbs={[
+          { label: "Trang chủ", href: routes.home },
+          { label: "Chi nhánh" },
+        ]}
       />
       <main className="space-y-6">
         {isLoading ? (
@@ -44,23 +52,37 @@ export default function BranchesPage() {
           />
         ) : branches && branches.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {branches.filter(branch => branch && branch.id).map((branch) => (
-              <Link key={branch.id} href={routes.branchDetail(branch.id)} prefetch={false}>
-                <Card className="hover:shadow-medium hover:-translate-y-0.5 transition-all duration-200 cursor-pointer [@media(prefers-reduced-motion:reduce)]:hover:translate-y-0">
-                  <CardContent className="p-6">
-                    <h3 className="text-xl font-semibold mb-2 text-secondary-900">{branch.name}</h3>
-                    <p className="text-secondary-600 mb-2">
-                      {typeof branch.address === 'string' 
-                        ? branch.address 
-                        : branch.address 
-                          ? `${branch.address.street || ''}, ${branch.address.ward || ''}, ${branch.address.district || ''}, ${branch.address.city || ''}`
-                          : 'N/A'}
-                    </p>
-                    <p className="text-secondary-500 text-sm">{branch.phone}</p>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
+            {branches
+              .filter((branch) => branch && branch.id)
+              .map((branch) => (
+                <Link
+                  key={branch.id}
+                  href={routes.branchDetail(branch.id)}
+                  prefetch={false}
+                >
+                  <Card className="hover:shadow-medium hover:-translate-y-0.5 transition-all duration-200 cursor-pointer [@media(prefers-reduced-motion:reduce)]:hover:translate-y-0">
+                    <CardContent className="p-6">
+                      <h3 className="text-xl font-semibold mb-2 text-secondary-900">
+                        {branch.name}
+                      </h3>
+                      <p className="text-secondary-600 mb-2">
+                        {typeof branch.address === "string"
+                          ? branch.address
+                          : branch.address
+                          ? `${branch.address.street || ""}, ${
+                              branch.address.ward || ""
+                            }, ${branch.address.district || ""}, ${
+                              branch.address.city || ""
+                            }`
+                          : "N/A"}
+                      </p>
+                      <p className="text-secondary-500 text-sm">
+                        {branch.phone}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
           </div>
         ) : (
           <EmptyState
@@ -72,4 +94,3 @@ export default function BranchesPage() {
     </PageShell>
   );
 }
-
