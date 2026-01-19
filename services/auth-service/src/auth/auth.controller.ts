@@ -2,7 +2,7 @@ import { Controller, Post, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
-import { LoginDto, RegisterDto } from './dtos/auth.dto';
+import { LoginDto, RegisterDto, ForgotPasswordDto, ResetPasswordDto } from './dtos/auth.dto';
 import { CurrentUser } from '@shared/common/decorators/user.decorator';
 import { Public } from '@shared/common/decorators/roles.decorator';
 
@@ -55,6 +55,23 @@ export class AuthController {
     // JWT is stateless, so logout is handled client-side
     // But we provide this endpoint for consistency and potential future token blacklisting
     return { message: 'Đăng xuất thành công' };
+  }
+
+  @Post('forgot-password')
+  @Public()
+  @ApiOperation({ summary: 'Quên mật khẩu - Gửi email đặt lại mật khẩu' })
+  @ApiResponse({ status: 200, description: 'Email đã được gửi (nếu email tồn tại)' })
+  async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(forgotPasswordDto);
+  }
+
+  @Post('reset-password')
+  @Public()
+  @ApiOperation({ summary: 'Đặt lại mật khẩu với token từ email' })
+  @ApiResponse({ status: 200, description: 'Mật khẩu đã được đặt lại thành công' })
+  @ApiResponse({ status: 400, description: 'Token không hợp lệ hoặc đã hết hạn' })
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    return this.authService.resetPassword(resetPasswordDto);
   }
 }
 
