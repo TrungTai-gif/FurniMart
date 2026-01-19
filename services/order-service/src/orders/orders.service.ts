@@ -3,9 +3,10 @@ import { InjectModel } from '@nestjs/mongoose';
 import { HttpService } from '@nestjs/axios';
 import { Model } from 'mongoose';
 import { firstValueFrom } from 'rxjs';
-import { Order, OrderDocument } from './schemas/order.schema';
+import { Order, OrderDocument, OrderItem } from './schemas/order.schema';
 import { CreateOrderDto, UpdateOrderStatusDto } from './dtos/order.dto';
 import { AuditLogService } from './audit-log.service';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class OrdersService {
@@ -20,6 +21,7 @@ export class OrdersService {
     @InjectModel(Order.name) private orderModel: Model<OrderDocument>,
     private httpService: HttpService,
     private auditLogService: AuditLogService,
+    private emailService: EmailService,
   ) {}
 
   async create(customerId: string, createOrderDto: CreateOrderDto): Promise<OrderDocument> {
@@ -41,16 +43,28 @@ export class OrdersService {
       // The actual branch assignment and stock reservation will happen later with branchId
       // This is just a preliminary check to ensure product exists and has stock somewhere
       try {
-        const warehouseUrl = `${this.WAREHOUSE_SERVICE_URL}/api/warehouse/inventory?productId=${item.productId}`;
+        // Use internal endpoint that doesn't require authentication
+        const warehouseUrl = `${this.WAREHOUSE_SERVICE_URL}/api/warehouse/internal/inventory?productId=${item.productId}`;
         const warehouseResponse = await firstValueFrom(this.httpService.get(warehouseUrl));
-        const warehouses = Array.isArray(warehouseResponse.data) ? warehouseResponse.data : [warehouseResponse.data];
+        // Handle both direct array and wrapped response
+        const responseData = warehouseResponse.data?.data || warehouseResponse.data;
+        const warehouses = Array.isArray(responseData) ? responseData : [responseData];
         
         if (!warehouses || warehouses.length === 0) {
           throw new BadRequestException(`Sản phẩm ${(item as any).productName || item.productId} không có trong kho`);
         }
 
         // Sum available quantity across all branches
-        const totalAvailable = warehouses.reduce((sum: number, w: any) => sum + (w.availableQuantity || 0), 0);
+        // Calculate availableQuantity if not provided
+        const totalAvailable = warehouses.reduce((sum: number, w: any) => {
+          const availableQty = w?.availableQuantity !== undefined && w?.availableQuantity !== null
+            ? w.availableQuantity
+            : Math.max(0, (w?.quantity || 0) - (w?.reservedQuantity || 0));
+          return sum + availableQty;
+        }, 0);
+        
+        this.logger.debug(`Preliminary stock check for product ${item.productId}: totalAvailable=${totalAvailable}, required=${item.quantity}`);
+        
         if (totalAvailable < item.quantity) {
           throw new BadRequestException(
             `Sản phẩm ${(item as any).productName || item.productId} không đủ hàng. Tổng còn ${totalAvailable} sản phẩm`
@@ -61,7 +75,7 @@ export class OrdersService {
           throw error;
         }
         // If warehouse service is unavailable, log warning but continue (graceful degradation)
-        this.logger.warn(`Could not check stock for product ${item.productId}:`, error.message);
+        this.logger.warn(`Could not check stock for product ${item.productId}:`, error?.message || error);
       }
 
       // Calculate price from item data (assuming price is included in item)
@@ -136,15 +150,30 @@ export class OrdersService {
           let hasEnoughStock = true;
           for (const item of createOrderDto.items) {
             try {
-              const warehouseUrl = `${this.WAREHOUSE_SERVICE_URL}/api/warehouse/inventory?branchId=${candidateBranchId}&productId=${item.productId}`;
+              // Use internal endpoint that doesn't require authentication
+              const warehouseUrl = `${this.WAREHOUSE_SERVICE_URL}/api/warehouse/internal/inventory?branchId=${candidateBranchId}&productId=${item.productId}`;
               const invResponse = await firstValueFrom(this.httpService.get(warehouseUrl));
-              const inventory = Array.isArray(invResponse.data) ? invResponse.data[0] : invResponse.data;
-              if (!inventory || (inventory.availableQuantity || 0) < item.quantity) {
+              // Handle both direct array and wrapped response
+              const responseData = invResponse.data?.data || invResponse.data;
+              const inventoryArray = Array.isArray(responseData) ? responseData : [responseData];
+              const inventory = inventoryArray.length > 0 ? inventoryArray[0] : null;
+              
+              // Calculate availableQuantity if not provided
+              const availableQty = inventory?.availableQuantity !== undefined && inventory?.availableQuantity !== null
+                ? inventory.availableQuantity
+                : Math.max(0, (inventory?.quantity || 0) - (inventory?.reservedQuantity || 0));
+              
+              this.logger.debug(`Checking stock for product ${item.productId} in branch ${candidateBranchId}: available=${availableQty}, required=${item.quantity}`);
+              
+              if (!inventory || availableQty < item.quantity) {
+                this.logger.warn(`Insufficient stock for product ${item.productId} in branch ${candidateBranchId}: available=${availableQty}, required=${item.quantity}`);
                 hasEnoughStock = false;
                 break;
               }
-            } catch (error) {
-              this.logger.warn(`Could not verify stock for product ${item.productId} in branch ${candidateBranchId}`);
+            } catch (error: any) {
+              this.logger.error(`Could not verify stock for product ${item.productId} in branch ${candidateBranchId}:`, error?.message || error);
+              hasEnoughStock = false;
+              break;
             }
           }
           if (hasEnoughStock) {
@@ -172,14 +201,28 @@ export class OrdersService {
           let hasEnoughStock = true;
           for (const item of createOrderDto.items) {
             try {
-              const warehouseUrl = `${this.WAREHOUSE_SERVICE_URL}/api/warehouse/inventory?branchId=${branchId}&productId=${item.productId}`;
+              // Use internal endpoint that doesn't require authentication
+              const warehouseUrl = `${this.WAREHOUSE_SERVICE_URL}/api/warehouse/internal/inventory?branchId=${branchId}&productId=${item.productId}`;
               const invResponse = await firstValueFrom(this.httpService.get(warehouseUrl));
-              const inventory = Array.isArray(invResponse.data) ? invResponse.data[0] : invResponse.data;
-              if (!inventory || (inventory.availableQuantity || 0) < item.quantity) {
+              // Handle both direct array and wrapped response
+              const responseData = invResponse.data?.data || invResponse.data;
+              const inventoryArray = Array.isArray(responseData) ? responseData : [responseData];
+              const inventory = inventoryArray.length > 0 ? inventoryArray[0] : null;
+              
+              // Calculate availableQuantity if not provided
+              const availableQty = inventory?.availableQuantity !== undefined && inventory?.availableQuantity !== null
+                ? inventory.availableQuantity
+                : Math.max(0, (inventory?.quantity || 0) - (inventory?.reservedQuantity || 0));
+              
+              this.logger.debug(`Checking stock for product ${item.productId} in branch ${branchId}: available=${availableQty}, required=${item.quantity}`);
+              
+              if (!inventory || availableQty < item.quantity) {
+                this.logger.warn(`Insufficient stock for product ${item.productId} in branch ${branchId}: available=${availableQty}, required=${item.quantity}`);
                 hasEnoughStock = false;
                 break;
               }
-            } catch (error) {
+            } catch (error: any) {
+              this.logger.error(`Could not verify stock for product ${item.productId} in branch ${branchId}:`, error?.message || error);
               hasEnoughStock = false;
               break;
             }
@@ -208,7 +251,8 @@ export class OrdersService {
     try {
       for (const item of createOrderDto.items) {
         try {
-          const reserveUrl = `${this.WAREHOUSE_SERVICE_URL}/api/warehouse/reserve/${item.productId}`;
+          // Use internal endpoint that doesn't require authentication
+          const reserveUrl = `${this.WAREHOUSE_SERVICE_URL}/api/warehouse/internal/reserve/${item.productId}`;
           await firstValueFrom(
             this.httpService.post(reserveUrl, { 
               quantity: item.quantity,
@@ -222,7 +266,8 @@ export class OrdersService {
           this.logger.error(`Failed to reserve stock for product ${item.productId}:`, error.message);
           for (const reserved of reservedStocks) {
             try {
-              const releaseUrl = `${this.WAREHOUSE_SERVICE_URL}/api/warehouse/release/${reserved.productId}`;
+              // Use internal endpoint that doesn't require authentication
+              const releaseUrl = `${this.WAREHOUSE_SERVICE_URL}/api/warehouse/internal/release/${reserved.productId}`;
               await firstValueFrom(this.httpService.post(releaseUrl, { 
                 quantity: reserved.quantity,
                 branchId: reserved.branchId,
@@ -274,7 +319,40 @@ export class OrdersService {
     }
 
     // Populate order before returning
-    return this.findById(order._id.toString());
+    const populatedOrder = await this.findById(order._id.toString());
+    
+    // Send order confirmation email
+    try {
+      this.logger.log(`Attempting to send order confirmation email for order ${order._id.toString()}`);
+      const userUrl = `${this.USER_SERVICE_URL}/api/users/internal/${customerId}`;
+      const userResponse = await firstValueFrom(this.httpService.get(userUrl));
+      const user = userResponse.data?.data || userResponse.data;
+      
+      if (user?.email) {
+        const orderItems = createOrderDto.items.map((item: any) => ({
+          name: item.productName || 'Sản phẩm',
+          quantity: item.quantity,
+          price: item.price * item.quantity,
+        }));
+        
+        await this.emailService.sendOrderConfirmationEmail(
+          user.email,
+          order._id.toString(),
+          orderItems,
+          finalTotalPrice,
+          createOrderDto.shippingAddress,
+        );
+        this.logger.log(`✅ Order confirmation email sent successfully to ${user.email} for order ${order._id.toString()}`);
+      } else {
+        this.logger.warn(`User ${customerId} does not have an email address`);
+      }
+    } catch (error) {
+      this.logger.error(`❌ Failed to send order confirmation email for order ${order._id.toString()}:`, error);
+      this.logger.error('Error details:', error instanceof Error ? error.message : String(error));
+      // Don't fail order creation if email fails
+    }
+    
+    return populatedOrder;
   }
 
   private async getRouteDistanceKm(
@@ -421,9 +499,9 @@ export class OrdersService {
         // Fetch user (customer)
         if (order.customerId) {
           try {
-            const userUrl = `${this.USER_SERVICE_URL}/api/users/${order.customerId}`;
+            const userUrl = `${this.USER_SERVICE_URL}/api/users/internal/${order.customerId}`;
             const userResponse = await firstValueFrom(this.httpService.get(userUrl));
-            populated.user = userResponse.data;
+            populated.user = userResponse.data?.data || userResponse.data;
           } catch (error) {
             // Silent fail - user might not exist
           }
@@ -443,9 +521,9 @@ export class OrdersService {
         // Fetch shipper
         if (order.shipperId) {
           try {
-            const shipperUrl = `${this.USER_SERVICE_URL}/api/users/${order.shipperId}`;
+            const shipperUrl = `${this.USER_SERVICE_URL}/api/users/internal/${order.shipperId}`;
             const shipperResponse = await firstValueFrom(this.httpService.get(shipperUrl));
-            populated.shipper = shipperResponse.data;
+            populated.shipper = shipperResponse.data?.data || shipperResponse.data;
           } catch (error) {
             // Silent fail - shipper might not exist
           }
@@ -511,9 +589,9 @@ export class OrdersService {
         // Fetch shipper if assigned
         if (order.shipperId) {
           try {
-            const shipperUrl = `${this.USER_SERVICE_URL}/api/users/${order.shipperId}`;
+            const shipperUrl = `${this.USER_SERVICE_URL}/api/users/internal/${order.shipperId}`;
             const shipperResponse = await firstValueFrom(this.httpService.get(shipperUrl));
-            populated.shipper = shipperResponse.data;
+            populated.shipper = shipperResponse.data?.data || shipperResponse.data;
           } catch (error) {
             // Silent fail
           }
@@ -536,9 +614,9 @@ export class OrdersService {
     // Fetch user (customer)
     if (order.customerId) {
       try {
-        const userUrl = `${this.USER_SERVICE_URL}/api/users/${order.customerId}`;
+        const userUrl = `${this.USER_SERVICE_URL}/api/users/internal/${order.customerId}`;
         const userResponse = await firstValueFrom(this.httpService.get(userUrl));
-        populatedOrder.user = userResponse.data;
+        populatedOrder.user = userResponse.data?.data || userResponse.data;
       } catch (error) {
         this.logger.warn(`Could not fetch user ${order.customerId}`, error);
       }
@@ -558,9 +636,9 @@ export class OrdersService {
     // Fetch shipper
     if (order.shipperId) {
       try {
-        const shipperUrl = `${this.USER_SERVICE_URL}/api/users/${order.shipperId}`;
+        const shipperUrl = `${this.USER_SERVICE_URL}/api/users/internal/${order.shipperId}`;
         const shipperResponse = await firstValueFrom(this.httpService.get(shipperUrl));
-        populatedOrder.shipper = shipperResponse.data;
+        populatedOrder.shipper = shipperResponse.data?.data || shipperResponse.data;
       } catch (error) {
         this.logger.warn(`Could not fetch shipper ${order.shipperId}`, error);
       }
@@ -687,6 +765,34 @@ export class OrdersService {
 
     // Update timestamps and related fields based on status
     const updateData: any = { status: normalizedStatus };
+    
+    // Send email notification when status changes (only for important statuses)
+    if (oldStatus !== normalizedStatus) {
+      const importantStatuses = ['CONFIRMED', 'PACKING', 'READY_TO_SHIP', 'SHIPPING', 'DELIVERED', 'CANCELLED', 'COMPLETED'];
+      if (importantStatuses.includes(normalizedStatus)) {
+        try {
+          this.logger.log(`Attempting to send order status update email for order ${id}, status: ${normalizedStatus}`);
+          const userUrl = `${this.USER_SERVICE_URL}/api/users/internal/${order.customerId}`;
+          const userResponse = await firstValueFrom(this.httpService.get(userUrl));
+          const user = userResponse.data?.data || userResponse.data;
+          
+          if (user?.email) {
+            await this.emailService.sendOrderStatusUpdateEmail(
+              user.email,
+              id,
+              normalizedStatus,
+            );
+            this.logger.log(`✅ Order status update email sent successfully to ${user.email} for order ${id}`);
+          } else {
+            this.logger.warn(`User ${order.customerId} does not have an email address`);
+          }
+        } catch (error) {
+          this.logger.error(`❌ Failed to send order status update email for order ${id}:`, error);
+          this.logger.error('Error details:', error instanceof Error ? error.message : String(error));
+          // Don't fail status update if email fails
+        }
+      }
+    }
     if (normalizedStatus === 'CONFIRMED' && !order.confirmedAt) {
       updateData.confirmedAt = new Date();
     } else if (normalizedStatus === 'SHIPPING' && !order.shippedAt) {
@@ -745,7 +851,9 @@ export class OrdersService {
     }
 
     // Populate order before returning
-    return this.findById(id);
+    const updatedOrder = await this.findById(id);
+
+    return updatedOrder;
   }
 
   async updatePaymentStatus(
@@ -770,6 +878,91 @@ export class OrdersService {
 
     this.logger.log(`Updated paymentStatus to ${paymentStatus} for orderId: ${orderId}`);
     return updatedOrder;
+  }
+
+  async updateItemQuantity(
+    orderId: string,
+    productId: string,
+    newQuantity: number,
+    userId: string,
+  ): Promise<OrderDocument> {
+    const order = await this.findById(orderId);
+    
+    // Only allow update for PENDING_CONFIRMATION or CONFIRMED orders
+    const normalizedStatus = order.status?.toUpperCase();
+    if (normalizedStatus !== 'PENDING_CONFIRMATION' && normalizedStatus !== 'CONFIRMED' && normalizedStatus !== 'PENDING') {
+      throw new BadRequestException('Chỉ có thể cập nhật số lượng cho đơn hàng ở trạng thái Chờ xác nhận hoặc Đã xác nhận');
+    }
+
+    // Verify order belongs to customer
+    if (order.customerId?.toString() !== userId) {
+      throw new BadRequestException('Bạn không có quyền cập nhật đơn hàng này');
+    }
+
+    if (newQuantity <= 0) {
+      throw new BadRequestException('Số lượng phải lớn hơn 0');
+    }
+
+    // Find the item
+    const itemIndex = order.items.findIndex((item: OrderItem) => item.productId?.toString() === productId);
+    if (itemIndex === -1) {
+      throw new NotFoundException('Không tìm thấy sản phẩm trong đơn hàng');
+    }
+
+    const item = order.items[itemIndex];
+    const oldQuantity = item.quantity;
+    const quantityDiff = newQuantity - oldQuantity;
+
+    // Update item quantity
+    item.quantity = newQuantity;
+
+    // Recalculate total price
+    const itemsTotal = order.items.reduce((sum: number, it: OrderItem) => sum + (it.price * it.quantity), 0);
+    const totalDiscount = order.items.reduce((sum: number, it: OrderItem) => sum + ((it.discount || 0) * it.quantity), 0);
+    const newTotalPrice = itemsTotal - totalDiscount;
+
+    // Update stock reservation if quantity changed
+    if (quantityDiff !== 0 && order.branchId) {
+      try {
+        if (quantityDiff > 0) {
+          // Reserve more stock
+          const reserveUrl = `${this.WAREHOUSE_SERVICE_URL}/api/warehouse/internal/reserve/${productId}`;
+          await firstValueFrom(this.httpService.post(reserveUrl, {
+            quantity: quantityDiff,
+            branchId: order.branchId.toString(),
+          }));
+          this.logger.log(`Reserved additional ${quantityDiff} units of product ${productId} for order ${orderId}`);
+        } else {
+          // Release stock
+          const releaseUrl = `${this.WAREHOUSE_SERVICE_URL}/api/warehouse/internal/release/${productId}`;
+          await firstValueFrom(this.httpService.post(releaseUrl, {
+            quantity: Math.abs(quantityDiff),
+            branchId: order.branchId.toString(),
+          }));
+          this.logger.log(`Released ${Math.abs(quantityDiff)} units of product ${productId} for order ${orderId}`);
+        }
+      } catch (error: any) {
+        this.logger.error(`Failed to update stock reservation for product ${productId}`, error);
+        throw new BadRequestException(`Không thể cập nhật số lượng: ${error?.response?.data?.message || error.message}`);
+      }
+    }
+
+    // Update order
+    const updatedOrder = await this.orderModel.findByIdAndUpdate(
+      orderId,
+      {
+        items: order.items,
+        totalPrice: newTotalPrice,
+      },
+      { new: true },
+    );
+
+    if (!updatedOrder) {
+      throw new NotFoundException('Đơn hàng không tồn tại');
+    }
+
+    this.logger.log(`Updated item quantity for product ${productId} from ${oldQuantity} to ${newQuantity} in order ${orderId}`);
+    return this.findById(orderId);
   }
 
   async assignShipper(
@@ -830,9 +1023,9 @@ export class OrdersService {
     // Verify employee belongs to the same branch as the order
     if (order.branchId) {
       try {
-        const userUrl = `${this.USER_SERVICE_URL}/api/users/${employeeId}`;
+        const userUrl = `${this.USER_SERVICE_URL}/api/users/internal/${employeeId}`;
         const userResponse = await firstValueFrom(this.httpService.get(userUrl));
-        const employee = userResponse.data;
+        const employee = userResponse.data?.data || userResponse.data;
         
         if (employee.role !== 'employee') {
           throw new BadRequestException('Chỉ có thể phân công nhân viên (employee)');
