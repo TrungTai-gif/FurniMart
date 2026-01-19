@@ -2,7 +2,7 @@
 
 ## 📋 Tổng quan
 
-**Settings Service** là một microservice độc lập trong hệ thống FurniMart, chịu trách nhiệm quản lý các cài đặt và cấu hình của website. Service này cho phép quản trị viên cấu hình các thành phần giao diện như Header, Footer, Hero Section, Newsletter, và các cài đặt chung của hệ thống mà không cần deploy lại code. Service được xây dựng bằng NestJS framework, sử dụng MongoDB để lưu trữ cấu hình và JWT để bảo vệ các endpoint cập nhật.
+**Settings Service** là một microservice độc lập trong hệ thống FurniMart, chịu trách nhiệm quản lý các cài đặt và cấu hình của website. Service này cho phép quản trị viên cấu hình các thành phần giao diện như Header, Footer, Hero Section, Newsletter, và các cài đặt chung của hệ thống. Service được xây dựng bằng NestJS framework, sử dụng MongoDB để lưu trữ cấu hình và JWT để bảo vệ các endpoint cập nhật.
 
 ## 🛠️ Công nghệ sử dụng
 
@@ -83,8 +83,6 @@ SettingsService.getSettings(key)
   └─→ Return: settings.value
 ```
 
-**Lưu ý**: Service tự động tạo default settings nếu chưa tồn tại, đảm bảo frontend luôn có dữ liệu để hiển thị.
-
 #### 2. Cập nhật Settings (PUT - Admin Only)
 ```
 Client → PUT /api/settings/{key}
@@ -106,103 +104,32 @@ SettingsService.updateSettings(key, updateDto)
 
 Service hỗ trợ 4 loại settings keys:
 
-#### 1. `theme` (mặc định)
-Cấu hình giao diện chủ đề, bao gồm:
-- **Newsletter section**: Title, subtitle, placeholder, button text, enabled flag
-- **Footer**: About text, contact info (address, phone, email), social media links, quick links, support links, copyright
+1. **`theme`** (mặc định): Cấu hình giao diện chủ đề
+   - Newsletter section
+   - Footer (about, contact, social media, links, copyright)
 
-#### 2. `general`
-Cài đặt chung của website:
-- Site name, description
-- Contact information (email, phone, address)
+2. **`general`**: Cài đặt chung của website
+   - Site name, description
+   - Contact information (email, phone, address)
 
-#### 3. `header`
-Cấu hình Header/Navbar:
-- Logo (text, URL, SVG)
-- Search bar configuration (placeholder, show/hide)
-- Navigation items với dropdown menus
+3. **`header`**: Cấu hình Header/Navbar
+   - Logo (text, URL, SVG)
+   - Search bar configuration
+   - Navigation items với dropdown menus
 
-#### 4. `hero`
-Cấu hình Hero Section:
-- Hero image URL
-- Title, subtitle
-- CTA button (text, link)
+4. **`hero`**: Cấu hình Hero Section
+   - Hero image URL
+   - Title, subtitle
+   - CTA button (text, link)
 
 ### Default Settings
 
 Khi settings chưa tồn tại trong database, service sẽ tự động tạo default settings:
 
-#### Theme Defaults
-```json
-{
-  "newsletter": {
-    "title": "Đăng ký nhận bản tin",
-    "subtitle": "Nhận thông tin sản phẩm mới, khuyến mãi đặc biệt",
-    "placeholder": "Nhập email của bạn",
-    "buttonText": "Đăng ký",
-    "enabled": true
-  },
-  "footer": {
-    "about": "Nền tảng thương mại điện tử nội thất hàng đầu...",
-    "address": "123 Nguyễn Hue, TP.HCM",
-    "phone": "0123 456 789",
-    "email": "info@furnimart.com",
-    "socialMedia": {
-      "facebook": "#",
-      "instagram": "#",
-      "twitter": "#"
-    },
-    "quickLinks": [
-      { "label": "Sản phẩm", "url": "/products" },
-      { "label": "Đơn hàng", "url": "/orders" }
-    ],
-    "supportLinks": [
-      { "label": "Hướng dẫn mua hàng", "url": "#" },
-      { "label": "Chính sách đổi trả", "url": "#" }
-    ],
-    "copyright": "© 2024 FurniMart. Tất cả quyền được bảo lưu."
-  }
-}
-```
-
-#### General Defaults
-```json
-{
-  "siteName": "FurniMart",
-  "siteDescription": "Nền tảng thương mại điện tử nội thất hàng đầu",
-  "contactEmail": "info@furnimart.com",
-  "contactPhone": "0123 456 789",
-  "address": "123 Nguyễn Hue, TP.HCM"
-}
-```
-
-#### Header Defaults
-```json
-{
-  "logoText": "FurniMart",
-  "logoUrl": null,
-  "logoSvg": null,
-  "searchPlaceholder": "Tìm kiếm sản phẩm...",
-  "showSearch": true,
-  "navigationItems": [
-    { "label": "Sản phẩm", "href": "/products", "dropdown": [] },
-    { "label": "Chi nhánh", "href": "/branches", "dropdown": [] },
-    { "label": "Khuyến mãi", "href": "/promotions", "dropdown": [] },
-    { "label": "Về FurniMart", "href": "/about", "dropdown": [] }
-  ]
-}
-```
-
-#### Hero Defaults
-```json
-{
-  "imageUrl": null,
-  "title": "Hệ Thống Nội Thất",
-  "subtitle": "Lưu Giữ Hồn Việt Trong Đường Nét Hiện Đại",
-  "buttonText": "Xem Chi Tiết",
-  "buttonLink": "/products"
-}
-```
+- **Theme**: Newsletter và Footer với nội dung mặc định tiếng Việt
+- **General**: Thông tin liên hệ FurniMart mặc định
+- **Header**: Logo text "FurniMart", navigation items mặc định
+- **Hero**: Title và subtitle mặc định về nội thất
 
 ### RBAC (Role-Based Access Control)
 
@@ -408,7 +335,6 @@ http://localhost:3011/api/docs
 ### Authentication
 - Tất cả **PUT endpoints** yêu cầu JWT token hợp lệ
 - Token được validate qua `AuthGuard('jwt')` từ Passport
-- Token phải được tạo từ auth-service với cùng `JWT_SECRET`
 
 ### Authorization
 - Chỉ user có role **ADMIN** mới có quyền cập nhật settings
@@ -418,7 +344,6 @@ http://localhost:3011/api/docs
 ### Validation
 - Tất cả input được validate bằng `class-validator`
 - DTO validation đảm bảo structure đúng của settings value
-- Partial updates được hỗ trợ (chỉ cần gửi fields muốn cập nhật)
 
 ### CORS
 - CORS được enable với cấu hình:
@@ -458,7 +383,7 @@ JWT_SECRET=your-super-secret-jwt-key-change-in-production
 
 **⚠️ Lưu ý**: 
 - `JWT_SECRET` phải giống với auth-service để validate token
-- Trong production, sử dụng strong, random secret key (ít nhất 32 characters)
+- Trong production, sử dụng strong, random secret key
 
 ### Chạy Development Mode
 ```bash
@@ -504,7 +429,6 @@ Dockerfile sử dụng multi-stage build:
 
 ```
 services/settings-service/
-├── .dockerignore          # Docker ignore rules
 ├── Dockerfile             # Docker build configuration
 ├── jest.config.js         # Jest testing configuration
 ├── nest-cli.json          # NestJS CLI configuration
@@ -594,10 +518,7 @@ services/settings-service/
 }
 ```
 
-**Lưu ý**: 
-- Schema sử dụng `type: Object` trong Mongoose để lưu trữ flexible JSON structure cho `value` field
-- Mỗi key chỉ có một document duy nhất trong database
-- Service tự động tạo default settings nếu chưa tồn tại
+**Lưu ý**: Schema sử dụng `type: Object` trong Mongoose để lưu trữ flexible JSON structure cho `value` field.
 
 ## 🔄 Tích hợp với Services khác
 
@@ -649,19 +570,6 @@ curl -X PUT http://localhost:3011/api/settings/theme \
 curl -X GET http://localhost:3011/api/settings/general
 ```
 
-**Update Hero Settings (Admin):**
-```bash
-curl -X PUT http://localhost:3011/api/settings/hero \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <admin-token>" \
-  -d '{
-    "value": {
-      "imageUrl": "https://cdn.furnimart.com/hero.jpg",
-      "title": "Khám Phá Nội Thất Đẳng Cấp"
-    }
-  }'
-```
-
 ### Unit Tests
 ```bash
 npm test              # Run tests
@@ -690,61 +598,24 @@ npm run test:cov      # Run tests with coverage
 7. **Caching**: Cân nhắc thêm caching cho GET endpoints (settings ít thay đổi)
 8. **Monitoring**: Setup monitoring và alerting cho service health
 9. **Version Control**: Có thể thêm versioning cho settings để rollback khi cần
-10. **Partial Updates**: Service hỗ trợ partial updates, chỉ cần gửi fields muốn thay đổi
 
 ## 💡 Use Cases
 
 ### 1. Frontend lấy cấu hình giao diện
 Frontend có thể gọi GET endpoints khi khởi động để lấy:
-- Theme settings (newsletter, footer) - hiển thị ở mọi trang
-- Header configuration (logo, navigation) - hiển thị ở navbar
-- Hero section settings - hiển thị ở trang chủ
-- General site information - hiển thị ở meta tags, contact pages
-
-**Ví dụ sử dụng trong Frontend:**
-```typescript
-// Lấy theme settings khi app khởi động
-const { data: themeSettings } = useQuery({
-  queryKey: ['settings', 'theme'],
-  queryFn: () => settingsService.getThemeSettings()
-});
-
-// Sử dụng trong component
-<Footer 
-  about={themeSettings?.footer?.about}
-  socialMedia={themeSettings?.footer?.socialMedia}
-/>
-```
+- Theme settings (newsletter, footer)
+- Header configuration (logo, navigation)
+- Hero section settings
+- General site information
 
 ### 2. Admin cập nhật cấu hình
 Admin có thể cập nhật:
 - Thay đổi logo, navigation menu
 - Cập nhật thông tin liên hệ
 - Thay đổi nội dung footer, newsletter
-- Cập nhật hero banner (image, title, subtitle)
-- Thay đổi site name, description
+- Cập nhật hero banner
 
-**Ví dụ cập nhật từ Admin Dashboard:**
-```typescript
-// Cập nhật hero settings
-await settingsService.updateHeroSettings({
-  value: {
-    imageUrl: uploadedImageUrl,
-    title: "Khám Phá Nội Thất Đẳng Cấp",
-    subtitle: "Nơi Hội Tụ Tinh Hoa Nội Thất Việt Nam"
-  }
-});
-```
-
-### 3. Dynamic Content Management
-Settings service cho phép thay đổi nội dung website mà không cần:
-- Deploy lại code
-- Restart services
-- Thay đổi codebase
-
-Chỉ cần cập nhật qua API và frontend sẽ tự động hiển thị nội dung mới.
-
-### 4. Multi-tenant Support (Future)
+### 3. Multi-tenant Support (Future)
 Có thể mở rộng để hỗ trợ multi-tenant bằng cách thêm `tenantId` vào schema.
 
 ## 🔮 Tính năng tương lai (TODO)
@@ -759,44 +630,14 @@ Có thể mở rộng để hỗ trợ multi-tenant bằng cách thêm `tenantId
 - [ ] Settings templates/presets
 - [ ] Bulk update multiple settings keys
 - [ ] Settings history/change tracking
-- [ ] Webhook notifications khi settings thay đổi
-- [ ] Settings validation rules (ví dụ: URL format, email format)
 
-## 📊 Performance Considerations
+## 📞 Liên hệ & Hỗ trợ
 
-### Caching Strategy
-- Settings ít thay đổi, nên có thể cache trong frontend
-- Có thể implement server-side caching với Redis
-- Cache invalidation khi admin cập nhật settings
-
-### Database Optimization
-- Index trên `key` field (unique index)
-- Settings documents nhỏ, query nhanh
-- Upsert operation hiệu quả với MongoDB
-
-### API Response
-- GET endpoints trả về trực tiếp `settings.value` (không bao gồm metadata)
-- Response size nhỏ, load nhanh
-- Không cần pagination (mỗi key chỉ có 1 document)
-
-## 🔍 Troubleshooting
-
-### Settings không hiển thị đúng
-- Kiểm tra xem settings đã được tạo trong database chưa
-- Service tự động tạo default nếu chưa tồn tại
-- Kiểm tra response từ API có đúng format không
-
-### Không thể cập nhật settings
-- Kiểm tra JWT token có hợp lệ không
-- Kiểm tra user có role ADMIN không
-- Kiểm tra `JWT_SECRET` có giống với auth-service không
-
-### Default settings không được tạo
-- Kiểm tra MongoDB connection
-- Kiểm tra logs của service
-- Thử gọi GET endpoint để trigger auto-creation
+Để biết thêm thông tin về FurniMart project, vui lòng tham khảo documentation chính của dự án.
 
 ---
 
 **Version**: 1.0.0  
 **Last Updated**: 2024
+
+
