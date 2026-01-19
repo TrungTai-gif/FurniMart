@@ -83,14 +83,40 @@ export default function ProductDetailPage() {
     queryFn: () => branchService.getBranches(),
   });
 
-  const { data: inventory } = useQuery({
+  const { 
+    data: inventory, 
+    isLoading: isLoadingInventory, 
+    isError: isInventoryError,
+    refetch: refetchInventory 
+  } = useQuery({
     queryKey: ["inventory", selectedBranch, productId],
-    queryFn: () => branchService.getBranchInventory(selectedBranch, productId),
+    queryFn: async () => {
+      try {
+        const result = await branchService.getBranchInventory(selectedBranch, productId);
+        console.log("Inventory result:", result);
+        if (result && result.length > 0) {
+          console.log("First inventory item:", result[0]);
+          console.log("availableQuantity:", result[0].availableQuantity);
+          console.log("quantity:", result[0].quantity);
+          console.log("reservedQuantity:", result[0].reservedQuantity);
+        }
+        return result || [];
+      } catch (error) {
+        console.error("Error fetching inventory:", error);
+        // Return empty array on error to prevent UI crash
+        return [];
+      }
+    },
     enabled: !!selectedBranch && !!productId,
+    retry: 2,
+    retryDelay: 1000,
   });
 
   useEffect(() => {
     if (selectedBranch && productId) {
+      // Reset quantity when branch changes
+      setQuantity(1);
+      // Invalidate and refetch inventory
       queryClient.invalidateQueries({
         queryKey: ["inventory", selectedBranch, productId],
       });
@@ -170,12 +196,40 @@ export default function ProductDetailPage() {
       return;
     }
 
-    if (
-      !inventory ||
-      inventory.length === 0 ||
-      inventory[0].quantity < quantity
-    ) {
-      toast.error("Chi nhánh này không đủ hàng");
+    // Check if inventory is still loading
+    if (isLoadingInventory) {
+      toast.info("Đang kiểm tra tồn kho, vui lòng đợi...");
+      return;
+    }
+
+    // Check if there was an error loading inventory
+    if (isInventoryError) {
+      toast.error("Không thể kiểm tra tồn kho. Vui lòng thử lại sau.");
+      return;
+    }
+
+    // Check inventory availability
+    const inventoryItem = inventory && inventory.length > 0 ? inventory[0] : null;
+    // Calculate availableQuantity: prefer availableQuantity, fallback to quantity - reservedQuantity
+    const availableQty = inventoryItem?.availableQuantity !== undefined && inventoryItem?.availableQuantity !== null
+      ? inventoryItem.availableQuantity
+      : (inventoryItem?.quantity ?? 0) - (inventoryItem?.reservedQuantity ?? 0);
+    
+    console.log("Add to cart check:", {
+      inventoryItem,
+      availableQty,
+      availableQuantity: inventoryItem?.availableQuantity,
+      quantity: inventoryItem?.quantity,
+      reservedQuantity: inventoryItem?.reservedQuantity,
+      requestedQuantity: quantity,
+    });
+    
+    if (!inventory || inventory.length === 0 || availableQty < quantity) {
+      toast.error(
+        inventory && inventory.length > 0
+          ? `Chi nhánh này chỉ còn ${availableQty} sản phẩm`
+          : "Chi nhánh này không có sản phẩm này trong kho"
+      );
       return;
     }
 
@@ -198,6 +252,71 @@ export default function ProductDetailPage() {
         selectedBranch || undefined
       );
       toast.success("Đã thêm vào giỏ hàng");
+    } catch {
+      toast.error("Không thể thêm vào giỏ hàng");
+    }
+  };
+
+  const handleBuyNow = async () => {
+    // Check if product exists
+    if (!product) {
+      toast.error("Sản phẩm không tồn tại");
+      return;
+    }
+
+    // Same validation as handleAddToCart
+    if (!selectedBranch) {
+      toast.error("Vui lòng chọn chi nhánh");
+      return;
+    }
+
+    if (isLoadingInventory) {
+      toast.info("Đang kiểm tra tồn kho, vui lòng đợi...");
+      return;
+    }
+
+    if (isInventoryError) {
+      toast.error("Không thể kiểm tra tồn kho. Vui lòng thử lại sau.");
+      return;
+    }
+
+    const inventoryItem = inventory && inventory.length > 0 ? inventory[0] : null;
+    const availableQty = inventoryItem?.availableQuantity !== undefined && inventoryItem?.availableQuantity !== null
+      ? inventoryItem.availableQuantity
+      : (inventoryItem?.quantity ?? 0) - (inventoryItem?.reservedQuantity ?? 0);
+    
+    if (!inventory || inventory.length === 0 || availableQty < quantity) {
+      toast.error(
+        inventory && inventory.length > 0
+          ? `Chi nhánh này chỉ còn ${availableQty} sản phẩm`
+          : "Chi nhánh này không có sản phẩm này trong kho"
+      );
+      return;
+    }
+
+    if (quantity <= 0) {
+      toast.error("Số lượng phải > 0");
+      return;
+    }
+
+    try {
+      // Add to cart
+      addItem({
+        productId: product.id,
+        product,
+        quantity,
+        branchId: selectedBranch || undefined,
+        price: discountedPrice,
+      });
+      await cartService.addToCart(
+        product.id,
+        quantity,
+        selectedBranch || undefined
+      );
+      
+      // Navigate to checkout immediately
+      toast.success("Đang chuyển đến trang thanh toán...");
+      window.location.href = "/checkout";
     } catch {
       toast.error("Không thể thêm vào giỏ hàng");
     }
@@ -401,15 +520,47 @@ export default function ProductDetailPage() {
                         </span>
                         {selectedBranch && (
                           <>
-                            {inventory &&
-                            inventory.length > 0 &&
-                            inventory[0].quantity > 0 ? (
-                              <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100">
-                                Có sẵn {inventory[0]?.quantity} sp
+                            {isLoadingInventory ? (
+                              <span className="text-xs font-bold text-yellow-600 bg-yellow-50 px-2 py-1 rounded-md border border-yellow-100">
+                                Đang kiểm tra...
                               </span>
+                            ) : isInventoryError ? (
+                              <button
+                                onClick={() => refetchInventory()}
+                                className="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-md border border-red-100 hover:bg-red-100 transition-colors"
+                                title="Nhấn để thử lại"
+                              >
+                                Lỗi - Thử lại
+                              </button>
+                            ) : inventory && inventory.length > 0 ? (
+                              (() => {
+                                const invItem = inventory[0];
+                                // Calculate availableQuantity: prefer availableQuantity, fallback to quantity - reservedQuantity
+                                const availableQty = invItem?.availableQuantity !== undefined && invItem?.availableQuantity !== null
+                                  ? invItem.availableQuantity
+                                  : (invItem?.quantity ?? 0) - (invItem?.reservedQuantity ?? 0);
+                                
+                                console.log("Display inventory status:", {
+                                  invItem,
+                                  availableQty,
+                                  availableQuantity: invItem?.availableQuantity,
+                                  quantity: invItem?.quantity,
+                                  reservedQuantity: invItem?.reservedQuantity,
+                                });
+                                
+                                return availableQty > 0 ? (
+                                  <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100">
+                                    Có sẵn {availableQty} sp
+                                  </span>
+                                ) : (
+                                  <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-md border border-red-100">
+                                    Hết hàng tại chi nhánh này
+                                  </span>
+                                );
+                              })()
                             ) : (
-                              <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-md border border-red-100">
-                                Hết hàng tại chi nhánh này
+                              <span className="text-xs font-bold text-gray-600 bg-gray-50 px-2 py-1 rounded-md border border-gray-100">
+                                Không có trong kho
                               </span>
                             )}
                           </>
@@ -448,30 +599,59 @@ export default function ProductDetailPage() {
                         {quantity}
                       </span>
                       <button
-                        onClick={() => setQuantity((q) => q + 1)}
+                        onClick={() => {
+                          const invItem = inventory && inventory.length > 0 ? inventory[0] : null;
+                          const availableQty = invItem?.availableQuantity ?? invItem?.quantity ?? 0;
+                          setQuantity((q) => Math.min(q + 1, availableQty));
+                        }}
                         className="p-3 hover:bg-secondary-50 rounded-lg text-secondary-600 transition-colors"
+                        disabled={
+                          !inventory ||
+                          inventory.length === 0 ||
+                          ((inventory[0]?.availableQuantity ?? inventory[0]?.quantity ?? 0) <= quantity)
+                        }
                       >
                         <FiPlus className="w-4 h-4" />
                       </button>
                     </div>
 
-                    {/* Add to Cart */}
-                    <Button
-                      variant="primary"
-                      size="lg"
-                      className="flex-1 text-base shadow-xl shadow-primary-500/20 hover:shadow-primary-500/30 hover:-translate-y-0.5 transition-all"
-                      onClick={handleAddToCart}
-                      disabled={
-                        (product.status !== "active" && !product.isActive) ||
-                        !selectedBranch ||
-                        (inventory &&
-                          inventory.length > 0 &&
-                          inventory[0].quantity < quantity)
-                      }
-                    >
-                      <FiShoppingCart className="w-5 h-5 mr-2" /> Thêm vào giỏ
-                      hàng
-                    </Button>
+                    {/* Add to Cart & Buy Now */}
+                    <div className="flex gap-3">
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        className="flex-1 text-base border-2 border-primary-300 hover:border-primary-400 hover:bg-primary-50 transition-all"
+                        onClick={handleAddToCart}
+                        disabled={
+                          (product.status !== "active" && !product.isActive) ||
+                          !selectedBranch ||
+                          isLoadingInventory ||
+                          isInventoryError ||
+                          (inventory &&
+                            inventory.length > 0 &&
+                            ((inventory[0]?.availableQuantity ?? inventory[0]?.quantity ?? 0) < quantity))
+                        }
+                      >
+                        <FiShoppingCart className="w-5 h-5 mr-2" /> Thêm vào giỏ
+                      </Button>
+                      <Button
+                        variant="primary"
+                        size="lg"
+                        className="flex-1 text-base shadow-xl shadow-primary-500/20 hover:shadow-primary-500/30 hover:-translate-y-0.5 transition-all"
+                        onClick={handleBuyNow}
+                        disabled={
+                          (product.status !== "active" && !product.isActive) ||
+                          !selectedBranch ||
+                          isLoadingInventory ||
+                          isInventoryError ||
+                          (inventory &&
+                            inventory.length > 0 &&
+                            ((inventory[0]?.availableQuantity ?? inventory[0]?.quantity ?? 0) < quantity))
+                        }
+                      >
+                        Mua ngay <FiArrowRight className="w-5 h-5 ml-2" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ) : (
