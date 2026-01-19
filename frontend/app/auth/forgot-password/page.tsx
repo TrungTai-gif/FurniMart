@@ -9,6 +9,7 @@ import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import AuthLayout from "@/components/layouts/AuthLayout";
 import { toast } from "react-toastify";
+import { authService } from "@/services/authService";
 
 const forgotPasswordSchema = z.object({
   email: z.string().email("Email không hợp lệ"),
@@ -31,12 +32,13 @@ export default function ForgotPasswordPage() {
   const onSubmit = async (data: ForgotPasswordValues) => {
     setIsLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
+      await authService.forgotPassword(data.email);
       setIsSubmitted(true);
-      toast.success("Đã gửi link khôi phục mật khẩu");
-    } catch (error) {
-      setIsSubmitted(true);
+      toast.success("Đã gửi link khôi phục mật khẩu đến email của bạn");
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || error?.message || "Có lỗi xảy ra, vui lòng thử lại";
+      toast.error(errorMessage);
+      console.error("Forgot password error:", error);
     } finally {
       setIsLoading(false);
     }
