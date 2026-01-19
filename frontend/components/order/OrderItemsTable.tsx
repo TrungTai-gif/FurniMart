@@ -1,16 +1,47 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import { OrderItem } from "@/lib/types";
 import { formatCurrency } from "@/lib/format";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
+import { FiPlus, FiMinus } from "react-icons/fi";
+import { orderService } from "@/services/orderService";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "react-toastify";
+import Button from "@/components/ui/Button";
 
 interface OrderItemsTableProps {
   items: OrderItem[];
   showImage?: boolean;
+  orderId?: string;
+  orderStatus?: string;
+  canEdit?: boolean; // Allow editing quantity
 }
 
-export default function OrderItemsTable({ items, showImage = true }: OrderItemsTableProps) {
+export default function OrderItemsTable({ items, showImage = true, orderId, orderStatus, canEdit }: OrderItemsTableProps) {
+  const queryClient = useQueryClient();
+  
+  // Check if order can be edited (PENDING_CONFIRMATION or CONFIRMED)
+  const canEditQuantity = canEdit !== false && orderId && orderStatus && (
+    orderStatus === "PENDING_CONFIRMATION" || 
+    orderStatus === "pending" || 
+    orderStatus === "CONFIRMED" || 
+    orderStatus === "confirmed"
+  );
+
+  const updateQuantityMutation = useMutation({
+    mutationFn: ({ productId, quantity }: { productId: string; quantity: number }) => 
+      orderService.updateItemQuantity(orderId!, productId, quantity),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["order", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["orders", "my"] });
+      toast.success("Đã cập nhật số lượng");
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || "Không thể cập nhật số lượng");
+    },
+  });
   // Filter valid items - must have quantity and price at minimum
   const validItems = items?.filter(item =>
     item &&
@@ -72,7 +103,45 @@ export default function OrderItemsTable({ items, showImage = true }: OrderItemsT
                 </div>
               </td>
               <td className="py-3 px-4 text-right">
-                <span className="text-secondary-900">{item.quantity}</span>
+                {canEditQuantity ? (
+                  <div className="flex items-center justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={() => {
+                        if (item.quantity > 1) {
+                          updateQuantityMutation.mutate({
+                            productId: item.productId?.toString() || "",
+                            quantity: item.quantity - 1,
+                          });
+                        }
+                      }}
+                      disabled={updateQuantityMutation.isPending || item.quantity <= 1}
+                    >
+                      <FiMinus className="w-4 h-4" />
+                    </Button>
+                    <span className="text-secondary-900 font-medium min-w-[2rem] text-center">
+                      {item.quantity}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={() => {
+                        updateQuantityMutation.mutate({
+                          productId: item.productId?.toString() || "",
+                          quantity: item.quantity + 1,
+                        });
+                      }}
+                      disabled={updateQuantityMutation.isPending}
+                    >
+                      <FiPlus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <span className="text-secondary-900">{item.quantity}</span>
+                )}
               </td>
               <td className="py-3 px-4 text-right">
                 <span className="text-secondary-600">{formatCurrency(item.price)}</span>
