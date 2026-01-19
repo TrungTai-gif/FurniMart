@@ -9,6 +9,9 @@ interface ProductFilters {
   material?: string;
   search?: string;
   status?: string;
+  rating?: number;
+  sortBy?: string;
+  sort?: string;
   page?: number;
   limit?: number;
 }
@@ -17,11 +20,18 @@ export const productService = {
   getProducts: async (filters?: ProductFilters): Promise<PaginatedResponse<Product>> => {
     const params = new URLSearchParams();
     if (filters?.categoryId) params.append("categoryId", filters.categoryId);
-    if (filters?.minPrice) params.append("minPrice", filters.minPrice.toString());
-    if (filters?.maxPrice) params.append("maxPrice", filters.maxPrice.toString());
+    if (filters?.minPrice !== undefined && filters.minPrice !== null) {
+      params.append("minPrice", filters.minPrice.toString());
+    }
+    if (filters?.maxPrice !== undefined && filters.maxPrice !== null) {
+      params.append("maxPrice", filters.maxPrice.toString());
+    }
     if (filters?.material) params.append("material", filters.material);
     if (filters?.search) params.append("search", filters.search);
     if (filters?.status) params.append("status", filters.status);
+    if (filters?.rating !== undefined) params.append("rating", filters.rating.toString());
+    if (filters?.sortBy) params.append("sortBy", filters.sortBy);
+    if (filters?.sort) params.append("sort", filters.sort);
     if (filters?.page) params.append("page", filters.page.toString());
     if (filters?.limit) params.append("limit", filters.limit.toString());
 
