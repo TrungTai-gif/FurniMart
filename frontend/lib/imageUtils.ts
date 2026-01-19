@@ -69,9 +69,7 @@ export function normalizeImageUrl(
     // Check if it's a static file in public folder (like hero-banner.jpg)
     // These should be kept as-is for Next.js to serve
     const publicStaticFiles = ["hero-banner.jpg", "logo.png", "default"];
-    const isStaticFile = publicStaticFiles.some((file) =>
-      imageUrl.includes(file)
-    );
+    const isStaticFile = publicStaticFiles.some(file => imageUrl.includes(file));
     if (isStaticFile) {
       return imageUrl; // Keep as-is for Next.js public folder
     }
