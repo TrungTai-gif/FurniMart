@@ -8,33 +8,17 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  (
-    {
-      className,
-      variant = "primary",
-      size = "md",
-      isLoading,
-      children,
-      disabled,
-      ...props
-    },
-    ref
-  ) => {
+  ({ className, variant = "primary", size = "md", isLoading, children, disabled, ...props }, ref) => {
+
     // Base styles with enhanced visual appeal
-    const baseStyles =
-      "inline-flex items-center justify-center rounded-xl font-semibold tracking-wide transition-all duration-350 ease-out focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.97]";
+    const baseStyles = "inline-flex items-center justify-center rounded-xl font-semibold tracking-wide transition-all duration-350 ease-out focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.97]";
 
     const variants = {
-      primary:
-        "bg-gradient-to-r from-primary-600 to-primary-700 text-white hover:from-primary-700 hover:to-primary-800 hover:scale-[1.02] shadow-md shadow-primary-500/30 hover:shadow-lg hover:shadow-primary-500/40 focus:ring-primary-500 transition-all duration-200",
-      secondary:
-        "bg-gradient-to-r from-secondary-800 to-secondary-900 text-white hover:from-secondary-700 hover:to-secondary-800 hover:scale-[1.02] shadow-md shadow-secondary-900/20 hover:shadow-lg focus:ring-secondary-500 transition-all duration-200",
-      outline:
-        "border-2 border-secondary-300 text-secondary-900 bg-white hover:bg-primary-50 hover:border-primary-400 hover:text-primary-700 hover:scale-[1.02] focus:ring-primary-500 transition-all duration-200",
-      ghost:
-        "text-secondary-700 hover:bg-primary-50 hover:text-primary-700 hover:scale-[1.02] focus:ring-primary-500 transition-all duration-200",
-      danger:
-        "bg-gradient-to-r from-error to-red-700 text-white hover:from-red-700 hover:to-red-800 hover:scale-[1.02] shadow-md shadow-error/30 hover:shadow-lg hover:shadow-error/40 focus:ring-red-500 transition-all duration-200",
+      primary: "bg-gradient-to-r from-primary-600 to-primary-700 text-white hover:from-primary-700 hover:to-primary-800 hover:scale-[1.02] shadow-md shadow-primary-500/30 hover:shadow-lg hover:shadow-primary-500/40 focus:ring-primary-500 transition-all duration-200",
+      secondary: "bg-gradient-to-r from-secondary-800 to-secondary-900 text-white hover:from-secondary-700 hover:to-secondary-800 hover:scale-[1.02] shadow-md shadow-secondary-900/20 hover:shadow-lg focus:ring-secondary-500 transition-all duration-200",
+      outline: "border-2 border-secondary-300 text-secondary-900 bg-white hover:bg-primary-50 hover:border-primary-400 hover:text-primary-700 hover:scale-[1.02] focus:ring-primary-500 transition-all duration-200",
+      ghost: "text-secondary-700 hover:bg-primary-50 hover:text-primary-700 hover:scale-[1.02] focus:ring-primary-500 transition-all duration-200",
+      danger: "bg-gradient-to-r from-error to-red-700 text-white hover:from-red-700 hover:to-red-800 hover:scale-[1.02] shadow-md shadow-error/30 hover:shadow-lg hover:shadow-error/40 focus:ring-red-500 transition-all duration-200",
     };
 
     const sizes = {
