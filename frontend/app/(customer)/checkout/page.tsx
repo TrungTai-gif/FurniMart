@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "react-toastify";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { FiMapPin, FiTruck, FiCreditCard, FiCheckCircle } from "react-icons/fi";
+import { FiMapPin, FiTruck, FiCreditCard, FiCheckCircle, FiTag, FiX } from "react-icons/fi";
 
 import Section from "@/components/ui/Section";
 import Button from "@/components/ui/Button";
@@ -20,6 +20,7 @@ import { branchService } from "@/services/branchService";
 import { orderService } from "@/services/orderService";
 import { paymentService } from "@/services/paymentService";
 import { userService } from "@/services/userService";
+import { promotionService } from "@/services/promotionService";
 import { formatCurrency } from "@/lib/format";
 import { notifications } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
@@ -75,6 +76,48 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { items, totalAmount, totalItems, clearCart } = useCartStore();
   const { user } = useAuthStore();
+  const [hasCheckedCart, setHasCheckedCart] = useState(false);
+
+  // Redirect if cart is empty - only check once on mount, after checking localStorage and store
+  useEffect(() => {
+    if (hasCheckedCart) return; // Already checked, don't check again
+    
+    // Check localStorage first (fastest check)
+    if (typeof window !== "undefined") {
+      try {
+        const cartStorage = localStorage.getItem("cart-storage");
+        if (cartStorage) {
+          const parsed = JSON.parse(cartStorage);
+          const storedItems = parsed?.state?.items || [];
+          if (storedItems.length > 0) {
+            // Cart has items in localStorage, don't redirect
+            setHasCheckedCart(true);
+            return;
+          }
+        }
+      } catch (error) {
+        console.error("Error reading cart from localStorage:", error);
+      }
+    }
+    
+    // If no items in localStorage, check store state (may be loading from backend)
+    if (items.length > 0) {
+      // Cart has items in store, don't redirect
+      setHasCheckedCart(true);
+      return;
+    }
+    
+    // If still no items, wait a bit for cart to load from backend
+    setHasCheckedCart(true);
+    const timer = setTimeout(() => {
+      // Final check: if still no items, redirect
+      if (items.length === 0) {
+        toast.info("Giỏ hàng trống, chuyển về trang chủ");
+        router.push("/");
+      }
+    }, 2000); // Wait 2 seconds to allow cart to load from backend
+    return () => clearTimeout(timer);
+  }, [hasCheckedCart, items.length, router]);
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [deliveryMethod, setDeliveryMethod] = useState<"shipping" | "pickup">(
@@ -85,6 +128,10 @@ export default function CheckoutPage() {
     "COD" | "VNPAY" | "MOMO" | "WALLET"
   >("COD");
   const [selectedAddressId, setSelectedAddressId] = useState<string>("");
+  const [promoCode, setPromoCode] = useState<string>("");
+  const [appliedDiscount, setAppliedDiscount] = useState<number>(0);
+  const [appliedPromotionId, setAppliedPromotionId] = useState<string | undefined>(undefined);
+  const [isApplyingPromo, setIsApplyingPromo] = useState(false);
 
   const {
     register,
@@ -173,6 +220,44 @@ export default function CheckoutPage() {
     },
   });
 
+  // Handle apply promotion code
+  const handleApplyPromoCode = async () => {
+    if (!promoCode.trim()) {
+      toast.error("Vui lòng nhập mã giảm giá");
+      return;
+    }
+
+    setIsApplyingPromo(true);
+    try {
+      const result = await promotionService.apply({
+        code: promoCode.trim(),
+        items: items.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+        totalAmount: totalAmount,
+      });
+
+      setAppliedDiscount(result.discount);
+      setAppliedPromotionId(result.promotionId);
+      toast.success(
+        `Áp dụng mã giảm giá thành công! Giảm ${formatCurrency(result.discount)}`
+      );
+    } catch (error: any) {
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Mã giảm giá không hợp lệ hoặc đã hết hạn";
+      toast.error(errorMessage);
+      setPromoCode("");
+      setAppliedDiscount(0);
+      setAppliedPromotionId(undefined);
+    } finally {
+      setIsApplyingPromo(false);
+    }
+  };
+
   const onSubmit = (data: ShippingFormValues) => {
     // Validate Branch Selection if Pickup
     if (deliveryMethod === "pickup" && !selectedBranch) {
@@ -196,6 +281,8 @@ export default function CheckoutPage() {
       phone: data.phone || user?.phone || "",
       paymentMethod,
       notes: data.note,
+      promotionId: appliedPromotionId,
+      promotionCode: appliedPromotionId ? promoCode : undefined,
     });
   };
 
@@ -567,8 +654,8 @@ export default function CheckoutPage() {
                 className="border-none shadow-2xl shadow-secondary-900/5 overflow-hidden"
               >
                 <div className="bg-secondary-900 p-6 text-white">
-                  <h3 className="text-lg font-bold">Đơn hàng của bạn</h3>
-                  <p className="text-secondary-400 text-sm">
+                  <h3 className="text-lg font-bold text-white">Đơn hàng của bạn</h3>
+                  <p className="text-white/90 text-sm font-medium">
                     {items.length} sản phẩm
                   </p>
                 </div>
@@ -610,12 +697,75 @@ export default function CheckoutPage() {
                 </CardContent>
 
                 <div className="p-6 bg-secondary-50 border-t border-secondary-100 space-y-3">
+                  {/* Mã giảm giá */}
+                  <div className="border-b border-secondary-200 pb-4 mb-3">
+                    <label className="block text-sm font-medium text-secondary-700 mb-2">
+                      Mã giảm giá
+                    </label>
+                    {appliedDiscount > 0 ? (
+                      <div className="flex items-center justify-between gap-2 p-3 bg-success/10 border border-success/30 rounded-lg">
+                        <div className="flex items-center gap-2 flex-1">
+                          <FiTag className="text-success w-4 h-4" />
+                          <span className="text-sm font-medium text-success">
+                            Đã áp dụng mã giảm giá
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPromoCode("");
+                            setAppliedDiscount(0);
+                            setAppliedPromotionId(undefined);
+                            toast.info("Đã xóa mã giảm giá");
+                          }}
+                          className="text-secondary-400 hover:text-secondary-600 transition-colors"
+                        >
+                          <FiX className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Nhập mã giảm giá"
+                          value={promoCode}
+                          onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                          className="flex-1 text-sm"
+                          disabled={isApplyingPromo}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && promoCode.trim()) {
+                              handleApplyPromoCode();
+                            }
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleApplyPromoCode}
+                          disabled={!promoCode.trim() || isApplyingPromo}
+                          isLoading={isApplyingPromo}
+                          className="shrink-0"
+                        >
+                          Áp dụng
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="flex justify-between text-sm">
                     <span className="text-secondary-600">Tạm tính</span>
                     <span className="font-medium text-secondary-900">
                       {formatCurrency(totalAmount)}
                     </span>
                   </div>
+                  {appliedDiscount > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-secondary-600">Giảm giá</span>
+                      <span className="font-medium text-success">
+                        -{formatCurrency(appliedDiscount)}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-sm">
                     <span className="text-secondary-600">Vận chuyển</span>
                     <span
@@ -635,7 +785,7 @@ export default function CheckoutPage() {
                         Tổng cộng
                       </span>
                       <span className="font-bold text-2xl text-primary-600">
-                        {formatCurrency(totalAmount)}
+                        {formatCurrency(Math.max(0, totalAmount - appliedDiscount))}
                       </span>
                     </div>
                   </div>

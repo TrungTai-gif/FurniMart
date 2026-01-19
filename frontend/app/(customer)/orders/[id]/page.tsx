@@ -205,7 +205,13 @@ export default function OrderDetailPage() {
                     <CardTitle className="text-lg font-semibold">Sản phẩm</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <OrderItemsTable items={(order.items || []) as OrderItem[]} showImage={true} />
+                    <OrderItemsTable 
+                      items={(order.items || []) as OrderItem[]} 
+                      showImage={true}
+                      orderId={order.id || orderId}
+                      orderStatus={order.status}
+                      canEdit={canCancel} // Can edit if can cancel (PENDING or CONFIRMED)
+                    />
                     <div className="border-t mt-4 pt-4">
                       <div className="flex justify-between font-bold text-lg">
                         <span>Tổng cộng:</span>

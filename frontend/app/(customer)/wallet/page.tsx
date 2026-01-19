@@ -71,8 +71,8 @@ export default function WalletPage() {
                     <Card className="bg-gradient-to-br from-primary-900 to-primary-700 text-white border-none shadow-premium h-full">
                         <CardContent className="p-8 flex flex-col justify-between h-full min-h-[200px]">
                             <div>
-                                <p className="text-primary-100 font-medium mb-2">Số dư hiện tại</p>
-                                <h2 className="text-4xl font-bold tracking-tight">
+                                <p className="text-white/90 font-semibold mb-2">Số dư hiện tại</p>
+                                <h2 className="text-4xl font-bold tracking-tight text-white">
                                     {isLoading ? "..." : formatCurrency(wallet?.balance || 0)}
                                 </h2>
                             </div>

@@ -2,59 +2,70 @@
 
 :root {
   /* 
-   * PREMIUM MINIMAL PALETTE
-   * Base: Warm Stone/Sand neutrals for a natural, high-end feel.
-   * Primary: Deep Emerald for elegance and trust.
-   * Text: High contrast for readability, softer greys for secondary.
+   * PREMIUM FURNITURE E-COMMERCE PALETTE
+   * Refined color scheme for luxury furniture retail
+   * Base: Warm, sophisticated neutrals with rich accents
+   * Primary: Deep teal-green for trust and sophistication
+   * Accent: Warm amber for highlights and premium feel
    */
 
-  /* Backgrounds */
-  --background: #FAFAF9; /* Stone 50 - Warm, organic background */
+  /* Backgrounds - Clean and bright for better contrast */
+  --background: #FFFFFF; /* Pure white for maximum contrast */
   --surface: #FFFFFF;    /* Pure white surface */
-  --surface-hover: #F5F5F4; /* Stone 100 */
-  --surface-active: #E7E5E4; /* Stone 200 */
+  --surface-hover: #F9FAFB; /* Very light grey hover */
+  --surface-active: #F3F4F6; /* Light grey active state */
 
-  /* Text Colors */
-  --foreground: #1C1917;      /* Stone 900 - Soft Black */
-  --text-primary: #1C1917;    
-  --text-secondary: #57534E;  /* Stone 600 - Readable Grey */
-  --text-tertiary: #A8A29E;   /* Stone 400 - Subtle info */
+  /* Text Colors - High contrast for excellent readability */
+  --foreground: #111827;      /* Almost black - maximum contrast */
+  --text-primary: #111827;    /* Dark grey for primary text */
+  --text-secondary: #374151;  /* Medium grey - still very readable */
+  --text-tertiary: #6B7280;   /* Lighter grey but still readable */
 
-  /* Primary Brand - Elegant Emerald */
-  --primary: #059669;         /* Emerald 600 */
+  /* Primary Brand - Refined Teal-Green */
+  --primary: #0D9488;         /* Teal 600 - More sophisticated */
   --primary-foreground: #FFFFFF;
-  --primary-50: #ECFDF5;
-  --primary-100: #D1FAE5;
-  --primary-500: #10B981;
-  --primary-600: #059669;
-  --primary-700: #047857;
-  --primary-900: #064E3B;     /* Deep forest for hover */
+  --primary-50: #F0FDFA;
+  --primary-100: #CCFBF1;
+  --primary-500: #14B8A6;
+  --primary-600: #0D9488;
+  --primary-700: #0F766E;
+  --primary-900: #134E4A;     /* Deep teal for depth */
 
-  /* Secondary/Neutral - Warm Stone */
-  --secondary: #78716C;
+  /* Secondary/Neutral - Clean greys with better contrast */
+  --secondary: #6B7280;
   --secondary-foreground: #FFFFFF;
-  --secondary-50: #FAFAF9;
-  --secondary-100: #F5F5F4;
-  --secondary-200: #E7E5E4; /* Borders */
-  --secondary-300: #D6D3D1;
-  --secondary-500: #78716C;
-  --secondary-600: #57534E;
-  --secondary-900: #1C1917;
+  --secondary-50: #F9FAFB;
+  --secondary-100: #F3F4F6;
+  --secondary-200: #E5E7EB; /* Clear borders */
+  --secondary-300: #D1D5DB;
+  --secondary-500: #6B7280;
+  --secondary-600: #4B5563;
+  --secondary-900: #111827;
 
-  /* Accents */
-  --accent: #D97706;          /* Amber 600 - Gold/Luxury accent */
+  /* Accents - Premium Gold/Amber & Vibrant Yellow */
+  --accent: #D97706;          /* Amber 600 - Luxury accent */
   --accent-light: #FEF3C7;
+  --accent-50: #FFFBEB;
+  --accent-100: #FEF3C7;
+  --accent-500: #F59E0B;
+  --accent-600: #D97706;
+  /* Vibrant Yellow for Promotions */
+  --yellow-400: #FACC15;       /* Bright yellow */
+  --yellow-500: #EAB308;       /* Vibrant yellow */
+  --yellow-600: #CA8A04;       /* Darker yellow */
+  --yellow-bg: #FEF9C3;        /* Light yellow background */
+  --yellow-promo: #FFEB3B;     /* Promo yellow */
   
-  /* Semantic */
-  --success: #059669;
+  /* Semantic - Refined colors */
+  --success: #0D9488;        /* Match primary for consistency */
   --error: #DC2626;
   --warning: #D97706;
   --info: #2563EB;
 
-  /* UI Elements */
-  --border: #E7E5E4;          /* Stone 200 - Very subtle borders */
-  --divider: #F5F5F4;         /* Stone 100 */
-  --ring: #059669;            /* Focus ring color */
+  /* UI Elements - Clear and defined */
+  --border: #E5E7EB;          /* Clear border color */
+  --divider: #E5E7EB;         /* Visible divider */
+  --ring: #0D9488;            /* Focus ring matches primary */
 }
 
 @theme inline {
@@ -83,16 +94,17 @@
   --color-border: var(--border);
   --color-error: var(--error);
 
-  /* Shadows - Diffused & Luxurious */
-  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-  /* New Premium Shadows */
-  --shadow-soft: 0 2px 10px rgba(0, 0, 0, 0.03);
-  --shadow-medium: 0 5px 20px rgba(0, 0, 0, 0.06);
-  --shadow-float: 0 10px 40px rgba(0, 0, 0, 0.08);
+  /* Shadows - Enhanced depth and elegance */
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.04);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.08);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.08);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.08);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.12), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  /* Premium Shadows - More refined */
+  --shadow-soft: 0 2px 12px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+  --shadow-medium: 0 6px 24px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+  --shadow-float: 0 12px 48px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
+  --shadow-glow: 0 0 20px rgba(13, 148, 136, 0.15); /* Primary glow effect */
 }
 
 html {
@@ -112,22 +124,36 @@ body {
 
 /* 
  * TYPOGRAPHY UTILITIES 
- * Overriding defaults for a more editorial feel 
+ * Refined typography for premium furniture e-commerce
  */
 h1, h2, h3, h4, h5, h6 {
   color: var(--foreground);
   font-weight: 600;
-  letter-spacing: -0.025em; /* Tighter headings */
-  line-height: 1.25;
+  letter-spacing: -0.02em; /* Slightly tighter for elegance */
+  line-height: 1.2;
 }
 
-h1 { font-size: 2.5rem; line-height: 1.2; }
-h2 { font-size: 2rem; line-height: 1.3; }
-h3 { font-size: 1.5rem; }
+h1 { 
+  font-size: 2.5rem; 
+  line-height: 1.15; 
+  font-weight: 700; /* Bolder for impact */
+}
+h2 { 
+  font-size: 2rem; 
+  line-height: 1.25; 
+  font-weight: 600;
+}
+h3 { 
+  font-size: 1.5rem; 
+  line-height: 1.3;
+  font-weight: 600;
+}
 
 p {
-  color: var(--text-secondary);
-  line-height: 1.75; /* Airy body text */
+  color: var(--text-primary); /* Use primary for better contrast */
+  line-height: 1.7; /* More comfortable reading */
+  font-size: 0.9375rem; /* Slightly larger base text */
+  font-weight: 400; /* Normal weight for readability */
 }
 
 /* 
@@ -139,33 +165,193 @@ p {
   transition-duration: 300ms;
 }
 
-/* Hover Lift Effect */
+/* Hover Lift Effect - Enhanced for premium feel */
 .hover-lift {
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), 
+              box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.3s ease;
 }
 .hover-lift:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-medium);
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-float);
 }
 
-/* Button Press Effect */
+/* Button Press Effect - More refined */
 .active-press:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
+  transition: transform 0.1s ease;
 }
 
-/* Custom Scrollbar */
+/* ============================================
+ * PREMIUM ANIMATIONS - Subtle & Professional
+ * ============================================ */
+
+/* 1. Hero Background Gradient Animation - Very subtle */
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient-shift 20s ease-in-out infinite;
+}
+
+/* 2. Fade-in + Slide-up - Professional entrance */
+@keyframes fade-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-slide-up {
+  animation: fade-slide-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+}
+
+/* Stagger delays for sequential appearance */
+.animate-delay-100 { animation-delay: 0.1s; }
+.animate-delay-200 { animation-delay: 0.2s; }
+.animate-delay-300 { animation-delay: 0.3s; }
+.animate-delay-400 { animation-delay: 0.4s; }
+.animate-delay-500 { animation-delay: 0.5s; }
+
+/* 3. Smooth fade-in (existing - keep) */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* 4. Card Hover Lift - Subtle elevation */
+@keyframes card-lift {
+  to {
+    transform: translateY(-4px);
+  }
+}
+
+.card-hover-lift {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.3s ease;
+}
+
+.card-hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* 5. Button Scale & Glow - Professional interaction */
+.button-hover-scale {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.button-hover-scale:hover {
+  transform: scale(1.02);
+}
+
+.button-hover-scale:active {
+  transform: scale(0.98);
+  transition: transform 0.1s ease;
+}
+
+/* 6. Navbar Underline Animation */
+.nav-link-underline {
+  position: relative;
+}
+
+.nav-link-underline::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: currentColor;
+  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-link-underline:hover::after,
+.nav-link-underline.active::after {
+  width: 100%;
+}
+
+/* 7. Glassmorphism Effect - Subtle blur */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.glass-effect-hover {
+  transition: background 0.3s ease,
+              backdrop-filter 0.3s ease,
+              border-color 0.3s ease,
+              transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.3s ease;
+}
+
+.glass-effect-hover:hover {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+/* 8. Elegant scale on hover (refined) */
+.hover-scale {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.hover-scale:hover {
+  transform: scale(1.02);
+}
+
+/* 9. Navbar Scroll Effect */
+.navbar-scrolled {
+  background: rgba(255, 255, 255, 0.98) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Custom Scrollbar - More refined */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--secondary-50);
+  border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--secondary-200);
+  background: var(--secondary-300);
   border-radius: 999px;
-  border: 2px solid var(--background);
+  border: 2px solid var(--secondary-50);
+  transition: background 0.2s ease;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--secondary-300);
+  background: var(--secondary-400);
 }

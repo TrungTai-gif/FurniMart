@@ -2,13 +2,15 @@
 
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import Image from "next/image";
 import { categoryService } from "@/services/categoryService";
 import PageShell from "@/components/layouts/PageShell";
 import PageHeader from "@/components/layouts/PageHeader";
-import Card, { CardContent } from "@/components/ui/Card";
 import Skeleton from "@/components/ui/Skeleton";
 import ErrorState from "@/components/ui/ErrorState";
 import { normalizeImageUrl } from "@/lib/imageUtils";
+import { FiArrowRight, FiGrid } from "react-icons/fi";
+import { routes } from "@/lib/config/routes";
 
 export default function CategoriesPage() {
   const { data: categories, isLoading, isError, refetch } = useQuery({
@@ -17,40 +19,73 @@ export default function CategoriesPage() {
   });
 
   return (
-    <PageShell>
-      <PageHeader
-        title="Danh mục sản phẩm"
-        breadcrumbs={[
-          { label: "Trang chủ", href: "/" },
-          { label: "Danh mục" },
-        ]}
-      />
-      <main className="space-y-8">
-        <section className="rounded-2xl border border-secondary-200 bg-gradient-to-br from-white via-white to-secondary-50 p-6 md:p-8">
-          <div className="max-w-3xl space-y-3">
-            <p className="text-sm font-semibold uppercase tracking-wide text-primary-600">
-              Khám phá bộ sưu tập
-            </p>
-            <h2 className="text-2xl font-semibold text-secondary-900 md:text-3xl">
-              Danh mục được sắp xếp rõ ràng, dễ lựa chọn
-            </h2>
-            <p className="text-secondary-600">
-              Chọn danh mục phù hợp để xem nhanh các sản phẩm nổi bật, chất liệu mới và xu hướng
-              đang được yêu thích.
-            </p>
+    <div className="min-h-screen bg-white">
+      {/* Hero Section */}
+      <div className="bg-gradient-to-br from-primary-50 via-white to-secondary-50 border-b border-secondary-200">
+        <PageShell className="pt-8 md:pt-12 pb-12">
+          <PageHeader
+            title="Danh mục sản phẩm"
+            description="Khám phá bộ sưu tập nội thất được phân loại theo không gian và phong cách. Dễ dàng tìm kiếm sản phẩm hoàn hảo cho ngôi nhà của bạn."
+            breadcrumbs={[
+              { label: "Trang chủ", href: routes.home },
+              { label: "Danh mục" },
+            ]}
+            className="mb-8"
+          />
+          
+          {/* Stats */}
+          <div className="max-w-4xl mx-auto">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-white rounded-2xl border-2 border-secondary-200 p-4 text-center">
+                <div className="flex items-center justify-center mb-2">
+                  <FiGrid className="w-6 h-6 text-primary-600" />
+                </div>
+                <div className="text-2xl font-bold text-secondary-900">
+                  {categories?.length || 0}
+                </div>
+                <div className="text-xs font-medium text-secondary-600 mt-1">
+                  Danh mục
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-2xl border-2 border-secondary-200 p-4 text-center">
+                <div className="text-3xl mb-1">🛋️</div>
+                <div className="text-2xl font-bold text-secondary-900">100+</div>
+                <div className="text-xs font-medium text-secondary-600 mt-1">
+                  Sản phẩm
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-2xl border-2 border-secondary-200 p-4 text-center">
+                <div className="text-3xl mb-1">✨</div>
+                <div className="text-2xl font-bold text-secondary-900">New</div>
+                <div className="text-xs font-medium text-secondary-600 mt-1">
+                  Hàng tuần
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-2xl border-2 border-secondary-200 p-4 text-center">
+                <div className="text-3xl mb-1">🎯</div>
+                <div className="text-2xl font-bold text-secondary-900">100%</div>
+                <div className="text-xs font-medium text-secondary-600 mt-1">
+                  Chính hãng
+                </div>
+              </div>
+            </div>
           </div>
-        </section>
+        </PageShell>
+      </div>
 
+      {/* Main Content */}
+      <PageShell className="py-12">
         {isLoading ? (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
-            {[...Array(6)].map((_, i) => (
-              <Card key={i} variant="elevated">
-                <CardContent className="p-5">
-                  <Skeleton className="h-40 w-full rounded-xl mb-4" />
-                  <Skeleton className="h-6 w-3/4 mb-2" />
-                  <Skeleton className="h-4 w-full" />
-                </CardContent>
-              </Card>
+          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="space-y-4">
+                <Skeleton className="aspect-square rounded-2xl" />
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-4 w-full" />
+              </div>
             ))}
           </div>
         ) : isError ? (
@@ -60,70 +95,97 @@ export default function CategoriesPage() {
             action={{ label: "Thử lại", onClick: () => refetch() }}
           />
         ) : categories && categories.length > 0 ? (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {categories.map((category) => {
               const imageUrl = normalizeImageUrl(category.image) || category.image;
               const initial = category.name?.charAt(0)?.toUpperCase() || "D";
+              
               return (
-                <Link key={category.id} href={`/products?categoryId=${category.id}`}>
-                  <Card
-                    variant="elevated"
-                    hoverable
-                    className="group h-full overflow-hidden border-secondary-100"
-                  >
-                    <div className="relative h-44 w-full overflow-hidden bg-secondary-100">
+                <Link
+                  key={category.id}
+                  href={`/categories/${category.slug || category.id}`}
+                  className="group block h-full"
+                >
+                  <div className="bg-white rounded-2xl overflow-hidden border-2 border-secondary-200 hover:border-primary-400 shadow-sm hover:shadow-xl transition-all duration-300 h-full flex flex-col">
+                    {/* Image Container */}
+                    <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-secondary-50 to-secondary-100">
                       {imageUrl ? (
-                        <img
+                        <Image
                           src={imageUrl}
                           alt={category.name}
-                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                          loading="lazy"
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-110"
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                         />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary-100 via-secondary-100 to-secondary-200">
-                          <span className="text-3xl font-semibold text-primary-700">
+                          <span className="text-6xl font-bold text-primary-600">
                             {initial}
                           </span>
                         </div>
                       )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/0 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                      <span className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-secondary-700 shadow-sm">
-                        Bộ sưu tập
-                      </span>
-                    </div>
-                    <CardContent className="p-5">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <h3 className="text-lg font-semibold text-secondary-900 group-hover:text-primary-700">
-                            {category.name}
-                          </h3>
-                          {category.description && (
-                            <p className="mt-2 text-sm text-secondary-600 line-clamp-2">
-                              {category.description}
-                            </p>
-                          )}
-                        </div>
-                        <span className="mt-1 text-sm font-medium text-primary-600">→</span>
+                      
+                      {/* Overlay on hover */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      
+                      {/* Badge */}
+                      <div className="absolute top-4 left-4">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/95 backdrop-blur-sm px-3 py-1.5 text-xs font-bold text-secondary-900 shadow-lg border border-white/50">
+                          <FiGrid className="w-3 h-3" />
+                          Bộ sưu tập
+                        </span>
                       </div>
-                      <p className="mt-4 text-xs font-medium uppercase tracking-wide text-secondary-500">
-                        Xem sản phẩm
-                      </p>
-                    </CardContent>
-                  </Card>
+                      
+                      {/* View CTA on hover */}
+                      <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
+                        <div className="flex items-center gap-1.5 rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-lg">
+                          Xem ngay
+                          <FiArrowRight className="w-4 h-4" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Content */}
+                    <div className="p-6 flex-1 flex flex-col bg-white">
+                      <h3 className="text-xl font-bold text-secondary-900 group-hover:text-primary-700 transition-colors mb-2">
+                        {category.name}
+                      </h3>
+                      {category.description && (
+                        <p className="text-sm text-secondary-600 line-clamp-2 mb-4">
+                          {category.description}
+                        </p>
+                      )}
+                      
+                      <div className="mt-auto pt-4 border-t border-secondary-100">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-medium text-primary-600 uppercase tracking-wide">
+                            Khám phá
+                          </span>
+                          <span className="text-secondary-900 font-semibold group-hover:text-primary-600 transition-colors">
+                            →
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </Link>
               );
             })}
           </div>
         ) : (
-          <Card variant="outline">
-            <CardContent className="py-12">
-              <div className="text-center text-secondary-500">
-                <p>Chưa có danh mục nào</p>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="text-center py-16">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-secondary-100 mb-4">
+              <FiGrid className="w-8 h-8 text-secondary-400" />
+            </div>
+            <h3 className="text-xl font-bold text-secondary-900 mb-2">
+              Chưa có danh mục nào
+            </h3>
+            <p className="text-secondary-600">
+              Hệ thống đang cập nhật danh mục mới
+            </p>
+          </div>
         )}
-      </main>
-    </PageShell>
+      </PageShell>
+    </div>
   );
 }

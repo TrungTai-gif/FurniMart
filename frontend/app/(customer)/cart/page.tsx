@@ -38,7 +38,12 @@ export default function CartPage() {
 
   useEffect(() => {
     if (backendCart && backendCart.length > 0) {
-      setCart(backendCart);
+      // Ensure branchId is preserved when syncing from backend
+      const itemsWithBranchId = backendCart.map(item => ({
+        ...item,
+        branchId: item.branchId || undefined, // Preserve branchId
+      }));
+      setCart(itemsWithBranchId);
     }
   }, [backendCart, setCart]);
 
@@ -250,43 +255,41 @@ export default function CartPage() {
                         </div>
                       </div>
                     </div>
-                    <Link
-                      href={items.length > 0 ? "/checkout" : "#"}
+                    <Button
+                      variant="primary"
+                      size="lg"
+                      className={cn(
+                        "w-full flex items-center justify-center gap-2 py-4 text-base font-bold shadow-lg transition-all transform",
+                        items.length === 0 || items.some((i) => !i.branchId)
+                          ? "opacity-50 cursor-not-allowed"
+                          : "shadow-primary-500/20 hover:shadow-primary-500/30 hover:-translate-y-0.5"
+                      )}
+                      disabled={
+                        items.length === 0 || items.some((i) => !i.branchId)
+                      }
                       onClick={(e) => {
+                        e.preventDefault();
                         if (items.length === 0) {
-                          e.preventDefault();
                           toast.error("Giỏ hàng trống");
+                          return;
                         }
                         // 🔧 Validate branch selection
                         const hasMissingBranch = items.some(
                           (item) => !item.branchId
                         );
                         if (hasMissingBranch) {
-                          e.preventDefault();
                           toast.error(
                             "Vui lòng chọn chi nhánh cho tất cả sản phẩm"
                           );
+                          return;
                         }
+                        // Navigate to checkout
+                        window.location.href = "/checkout";
                       }}
-                      className="block"
                     >
-                      <Button
-                        variant="primary"
-                        size="lg"
-                        className={cn(
-                          "w-full flex items-center justify-center gap-2 py-4 text-base font-bold shadow-lg transition-all transform",
-                          items.length === 0 || items.some((i) => !i.branchId)
-                            ? "opacity-50 cursor-not-allowed"
-                            : "shadow-primary-500/20 hover:shadow-primary-500/30 hover:-translate-y-0.5"
-                        )}
-                        disabled={
-                          items.length === 0 || items.some((i) => !i.branchId)
-                        }
-                      >
-                        <span>Tiến hành thanh toán</span>
-                        <FiArrowRight />
-                      </Button>
-                    </Link>
+                      <span>Tiến hành thanh toán</span>
+                      <FiArrowRight />
+                    </Button>
 
                     <div className="mt-6 flex items-center justify-center gap-4 text-secondary-300">
                       <FiCheckCircle className="w-5 h-5" />
