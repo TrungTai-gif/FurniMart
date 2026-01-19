@@ -31,6 +31,8 @@ export const endpoints = {
     refresh: `${API_BASE}/auth/refresh`,
     logout: `${API_BASE}/auth/logout`,
     me: `${API_BASE}/auth/me`, // POST method
+    forgotPassword: `${API_BASE}/auth/forgot-password`,
+    resetPassword: `${API_BASE}/auth/reset-password`,
   },
 
   // Users
@@ -87,6 +89,7 @@ export const endpoints = {
     list: `${API_BASE}/orders`,
     detail: (id: string) => `${API_BASE}/orders/${id}`,
     updateStatus: (id: string) => `${API_BASE}/orders/${id}/status`,
+    updateItemQuantity: (id: string, productId: string) => `${API_BASE}/orders/${id}/items/${productId}/quantity`,
     assignShipper: (id: string) => `${API_BASE}/orders/${id}/assign-shipper`,
     assignEmployee: (id: string) => `${API_BASE}/orders/${id}/assign-employee`,
     cancel: (id: string) => `${API_BASE}/orders/${id}/cancel`,
