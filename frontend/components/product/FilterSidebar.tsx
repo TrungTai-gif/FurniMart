@@ -38,6 +38,17 @@ export default function FilterSidebar({
     setLocalFilters(filters);
   }, [filters]);
 
+  // Helper to update both price filters at once
+  const updatePriceFilter = (minPrice: number | undefined, maxPrice: number | undefined) => {
+    const newFilters = {
+      ...localFilters,
+      minPrice,
+      maxPrice,
+    };
+    setLocalFilters(newFilters);
+    onFilterChange(newFilters);
+  };
+
   const handleFilterChange = (key: string, value: unknown) => {
     const newFilters = { ...localFilters, [key]: value };
     setLocalFilters(newFilters);
@@ -203,24 +214,39 @@ export default function FilterSidebar({
                 { label: "Dưới 1 triệu", min: 0, max: 1000000 },
                 { label: "1-5 triệu", min: 1000000, max: 5000000 },
                 { label: "5-10 triệu", min: 5000000, max: 10000000 },
-                { label: "Trên 10 triệu", min: 10000000, max: undefined },
-              ].map((range) => (
-                <button
-                  key={range.label}
-                  onClick={() => {
-                    handleFilterChange("minPrice", range.min);
-                    handleFilterChange("maxPrice", range.max);
-                  }}
-                  className={cn(
-                    "px-3 py-1.5 text-xs rounded-md border transition-colors",
-                    localFilters.minPrice === range.min && localFilters.maxPrice === range.max
-                      ? "bg-primary-600 text-white border-primary-600"
-                      : "bg-white text-secondary-700 border-secondary-300 hover:border-primary-500 hover:text-primary-600"
-                  )}
-                >
-                  {range.label}
-                </button>
-              ))}
+                { label: "Trên 10 triệu", min: 10000000, max: null as number | null },
+              ].map((range) => {
+                // Check if this range is active
+                const isActive = 
+                  localFilters.minPrice === range.min && 
+                  (range.max === null 
+                    ? localFilters.maxPrice === undefined 
+                    : localFilters.maxPrice === range.max);
+                
+                return (
+                  <button
+                    key={range.label}
+                    type="button"
+                    onClick={() => {
+                      if (isActive) {
+                        // If already active, clear the filter
+                        updatePriceFilter(undefined, undefined);
+                      } else {
+                        // Set the filter - update both at once
+                        updatePriceFilter(range.min, range.max === null ? undefined : range.max);
+                      }
+                    }}
+                    className={cn(
+                      "px-3 py-1.5 text-xs rounded-md border transition-colors font-medium",
+                      isActive
+                        ? "bg-primary-600 text-white border-primary-600"
+                        : "bg-white text-secondary-700 border-secondary-300 hover:border-primary-500 hover:text-primary-600"
+                    )}
+                  >
+                    {range.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
