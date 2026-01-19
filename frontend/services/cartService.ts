@@ -18,6 +18,7 @@ type CartItemDocument = Partial<CartItem> & {
   price?: number;
   id?: string;
   productId?: string;
+  branchId?: string; // Ensure branchId is included
 };
 
 const normalizeCartItem = (
@@ -35,6 +36,7 @@ const normalizeCartItem = (
     id: item.id || item._id || `temp-${Date.now()}-${Math.random()}`,
     productId,
     price,
+    branchId: item.branchId || (item as any).branchId, // Preserve branchId from backend
     product: {
       ...product,
       images: product?.images || [],
@@ -50,8 +52,10 @@ export const cartService = {
     const response = await apiClient.get<CartResponse>(
       endpoints.cart.get
     );
+    // apiClient interceptor already unwraps response.data.data to response.data
     // Backend returns CartDocument with items array
-    const items = response.data?.items || [];
+    const cartData = response.data as any;
+    const items = (cartData?.items || []) as any[];
     // Fetch product info for items that don't have it
     const itemsWithProducts = await Promise.all(
       items.map(async (item) => {
@@ -77,9 +81,11 @@ export const cartService = {
 
   syncCart: async (items: Array<{ productId: string; quantity: number; branchId?: string }>): Promise<CartItem[]> => {
     const response = await apiClient.post<CartResponse>(endpoints.cart.sync, { items });
+    // apiClient interceptor already unwraps response.data.data to response.data
     // Backend returns CartDocument with items array
-    const backendItems = response.data?.items || [];
-    // Ensure all items have required fields including price
+    const cartData = response.data as any;
+    const backendItems = (cartData?.items || []) as any[];
+    // Ensure all items have required fields including price and branchId
     return backendItems.map(item => normalizeCartItem(item, item.productId, item.product));
   },
 
@@ -92,10 +98,12 @@ export const cartService = {
       endpoints.cart.add,
       { productId, quantity, branchId }
     );
+    // apiClient interceptor already unwraps response.data.data to response.data
     // Backend returns CartDocument, but we need the last item added
     // In practice, backend should return the updated cart or the added item
     // For now, we'll return the first item or create a temporary one
-    const items = response.data?.items || [];
+    const cartData = response.data as any;
+    const items = (cartData?.items || []) as any[];
     const lastItem = items[items.length - 1];
     if (lastItem) {
       return normalizeCartItem(lastItem, productId, lastItem.product);
@@ -116,9 +124,11 @@ export const cartService = {
       endpoints.cart.update(productId),
       { quantity }
     );
+    // apiClient interceptor already unwraps response.data.data to response.data
     // Backend returns CartDocument, find the updated item
-    const items = response.data?.items || [];
-    const foundItem = items.find(item => item.productId === productId);
+    const cartData = response.data as any;
+    const items = (cartData?.items || []) as any[];
+    const foundItem = items.find((item: any) => item.productId === productId);
     if (foundItem) {
       return normalizeCartItem(foundItem, productId, foundItem.product);
     }
