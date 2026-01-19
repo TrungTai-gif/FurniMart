@@ -4,7 +4,7 @@ import { ApiTags, ApiBearerAuth, ApiOperation, ApiExcludeEndpoint } from '@nestj
 import { AuthGuard } from '@nestjs/passport';
 import { OrdersService } from './orders.service';
 import { AuditLogService } from './audit-log.service';
-import { CreateOrderDto, UpdateOrderStatusDto, UpdatePaymentStatusDto } from './dtos/order.dto';
+import { CreateOrderDto, UpdateOrderStatusDto, UpdatePaymentStatusDto, UpdateOrderItemQuantityDto } from './dtos/order.dto';
 import { CurrentUser } from '@shared/common/decorators/user.decorator';
 import { Roles } from '@shared/common/decorators/roles.decorator';
 import { RolesGuard } from '@shared/common/guards/roles.guard';
@@ -187,6 +187,24 @@ export class OrdersController {
       id,
       updateDto.paymentStatus,
       updateDto.isPaid ?? false,
+    );
+  }
+
+  @Patch(':id/items/:productId/quantity')
+  @Roles(Role.CUSTOMER)
+  @UseGuards(RolesGuard)
+  @ApiOperation({ summary: 'Cập nhật số lượng sản phẩm trong đơn hàng (Customer)' })
+  async updateItemQuantity(
+    @Param('id') orderId: string,
+    @Param('productId') productId: string,
+    @Body() body: { quantity: number },
+    @CurrentUser() user: any,
+  ) {
+    return this.ordersService.updateItemQuantity(
+      orderId,
+      productId,
+      body.quantity,
+      user.userId || user.id,
     );
   }
 }
