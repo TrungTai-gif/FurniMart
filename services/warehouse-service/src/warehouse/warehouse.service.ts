@@ -103,19 +103,25 @@ export class WarehouseService {
     // Update quantities based on transaction type
     if (transaction.type === 'import') {
       warehouse.quantity += transaction.quantity;
-      warehouse.availableQuantity += transaction.quantity;
+      // availableQuantity will be recalculated by pre-save hook
+      warehouse.availableQuantity = warehouse.quantity - warehouse.reservedQuantity;
     } else if (transaction.type === 'export') {
-      if (warehouse.availableQuantity < Math.abs(transaction.quantity)) {
-        throw new BadRequestException('Không đủ hàng trong kho');
+      // Check available quantity before export
+      const exportQuantity = Math.abs(transaction.quantity);
+      if (warehouse.availableQuantity < exportQuantity) {
+        throw new BadRequestException(`Không đủ hàng trong kho. Còn ${warehouse.availableQuantity} sản phẩm`);
       }
       warehouse.quantity += transaction.quantity; // quantity is negative
-      warehouse.availableQuantity += transaction.quantity;
+      // availableQuantity will be recalculated by pre-save hook
+      warehouse.availableQuantity = Math.max(0, warehouse.quantity - warehouse.reservedQuantity);
     } else if (transaction.type === 'adjustment') {
       warehouse.quantity += transaction.quantity;
+      // availableQuantity will be recalculated by pre-save hook
       warehouse.availableQuantity = warehouse.quantity - warehouse.reservedQuantity;
     } else if (transaction.type === 'damaged' || transaction.type === 'returned') {
       warehouse.quantity += transaction.quantity; // negative
-      warehouse.availableQuantity += transaction.quantity;
+      // availableQuantity will be recalculated by pre-save hook
+      warehouse.availableQuantity = warehouse.quantity - warehouse.reservedQuantity;
     }
 
     return warehouse.save();
@@ -132,11 +138,14 @@ export class WarehouseService {
     }
 
     if (warehouse.availableQuantity < quantity) {
-      throw new BadRequestException('Không đủ hàng trong kho');
+      throw new BadRequestException(
+        `Không đủ hàng trong kho. Còn ${warehouse.availableQuantity} sản phẩm, yêu cầu ${quantity}`
+      );
     }
 
     warehouse.reservedQuantity += quantity;
-    warehouse.availableQuantity -= quantity;
+    // availableQuantity will be recalculated by pre-save hook
+    warehouse.availableQuantity = warehouse.quantity - warehouse.reservedQuantity;
     return warehouse.save();
   }
 
@@ -150,7 +159,10 @@ export class WarehouseService {
       );
     }
 
+    // Ensure we don't release more than reserved
+    const releaseQuantity = Math.min(quantity, warehouse.reservedQuantity);
     warehouse.reservedQuantity = Math.max(0, warehouse.reservedQuantity - quantity);
+    // availableQuantity will be recalculated by pre-save hook
     warehouse.availableQuantity = warehouse.quantity - warehouse.reservedQuantity;
     return warehouse.save();
   }
