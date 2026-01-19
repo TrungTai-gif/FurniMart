@@ -18,5 +18,13 @@ export class UserService {
   async findById(id: string): Promise<UserDocument | null> {
     return this.userModel.findById(id);
   }
+
+  async findByResetToken(token: string): Promise<UserDocument | null> {
+    return this.userModel.findOne({ resetToken: token });
+  }
+
+  async update(id: string, updateData: any): Promise<UserDocument | null> {
+    return this.userModel.findByIdAndUpdate(id, updateData, { new: true });
+  }
 }
 
