@@ -111,6 +111,9 @@ services:
       NODE_ENV: ${NODE_ENV:-production}
       MONGODB_URI: mongodb://admin:admin123@mongodb:27017/furnimart?authSource=admin
       JWT_SECRET: ${JWT_SECRET:-furnimart-secret-key-2024}
+      GMAIL_USER: ${GMAIL_USER:-nguyentai2292005@gmail.com}
+      GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD:-ubwdhrklqkkscyrk}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
     depends_on:
       mongodb:
         condition: service_healthy
@@ -191,6 +194,8 @@ services:
       USER_SERVICE_URL: http://user-service:3003
       WAREHOUSE_SERVICE_URL: http://warehouse-service:3009
       INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:-furnimart-internal-secret-2024}
+      GMAIL_USER: ${GMAIL_USER:-}
+      GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD:-}
     depends_on:
       mongodb:
         condition: service_healthy
