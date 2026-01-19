@@ -47,6 +47,12 @@ export class User {
 
   @Prop({ default: true })
   isActive!: boolean;
+
+  @Prop()
+  resetToken?: string;
+
+  @Prop()
+  resetTokenExpiry?: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
