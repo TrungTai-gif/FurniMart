@@ -94,3 +94,11 @@ export class UpdatePaymentStatusDto {
   @IsOptional()
   isPaid?: boolean;
 }
+
+export class UpdateOrderItemQuantityDto {
+  @IsString()
+  productId!: string;
+  
+  @IsNumber()
+  quantity!: number;
+}
