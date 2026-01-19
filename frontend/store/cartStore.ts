@@ -122,11 +122,12 @@ export const useCartStore = create<CartState>()(
         });
       },
       setCart: (items) => {
-        // Ensure all items have valid price
+        // Ensure all items have valid price and preserve branchId
         const validItems = items.map((item) => ({
           ...item,
           price: Number(item.price) || 0,
           quantity: Number(item.quantity) || 0,
+          branchId: item.branchId || undefined, // Preserve branchId
         }));
         set({
           items: validItems,
