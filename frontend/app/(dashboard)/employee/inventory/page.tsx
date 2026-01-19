@@ -37,7 +37,35 @@ export default function EmployeeInventoryPage() {
 
   const { data, isLoading, isError, refetch } = useQuery<LocalInventoryItem[]>({
     queryKey: ["employee", "inventory", branchId],
-    queryFn: () => branchService.getBranchInventory(branchId || "") as unknown as Promise<LocalInventoryItem[]>,
+    queryFn: async () => {
+      const branchInventory = await branchService.getBranchInventory(branchId || "");
+      return branchInventory.map((item: any) => {
+        const quantity = item.quantity || 0;
+        const reservedQuantity = item.reservedQuantity || 0;
+        // Calculate availableQuantity correctly: prefer availableQuantity from API, otherwise calculate from quantity - reservedQuantity
+        const availableQuantity = item.availableQuantity !== undefined && item.availableQuantity !== null
+          ? item.availableQuantity
+          : Math.max(0, quantity - reservedQuantity);
+        
+        return {
+          id: item.id || item._id || "",
+          productId: item.productId,
+          product: item.product || { id: item.productId, name: "N/A" },
+          quantity,
+          reservedQuantity,
+          availableQuantity,
+          minStockLevel: item.minStockLevel || 10,
+          maxStockLevel: item.maxStockLevel || 100,
+          location: item.location || "Kho chính",
+          status: availableQuantity > (item.minStockLevel || 10) 
+            ? "in_stock" 
+            : availableQuantity > 0 
+              ? "low_stock" 
+              : "out_of_stock",
+          lastUpdated: item.updatedAt || item.createdAt || new Date().toISOString(),
+        };
+      }) as LocalInventoryItem[];
+    },
     enabled: !!branchId,
   });
 
