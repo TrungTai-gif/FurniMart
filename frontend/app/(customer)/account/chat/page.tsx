@@ -40,18 +40,26 @@ export default function CustomerChatPage() {
     mutationFn: (subject?: string) => chatService.createOrGetChat({ subject }),
     onSuccess: (chat) => {
       queryClient.invalidateQueries({ queryKey: ["customer", "chats"] });
-      setSelectedChatId(chat.id);
+      const chatId = chat.id || chat._id || null;
+      setSelectedChatId(chatId);
       setShowNewChat(false);
       setNewChatSubject("");
       toast.success("Đã tạo chat mới");
     },
-    onError: () => {
-      toast.error("Không thể tạo chat");
+    onError: (error: any) => {
+      console.error("Create chat error:", error);
+      const errorMessage = error?.response?.data?.message || error?.message || "Không thể tạo chat";
+      toast.error(errorMessage);
     },
   });
 
   const sendMessageMutation = useMutation({
-    mutationFn: (content: string) => chatService.sendMessage(selectedChatId || "", { message: content }),
+    mutationFn: (content: string) => {
+      if (!selectedChatId) {
+        throw new Error("Chưa chọn cuộc trò chuyện");
+      }
+      return chatService.sendMessage(selectedChatId, { message: content });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["chat", selectedChatId] });
       queryClient.invalidateQueries({ queryKey: ["customer", "chats"] });
@@ -60,8 +68,10 @@ export default function CustomerChatPage() {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
       }, 100);
     },
-    onError: () => {
-      toast.error("Không thể gửi tin nhắn");
+    onError: (error: any) => {
+      console.error("Send message error:", error);
+      const errorMessage = error?.response?.data?.message || error?.message || "Không thể gửi tin nhắn";
+      toast.error(errorMessage);
     },
   });
 
@@ -81,7 +91,14 @@ export default function CustomerChatPage() {
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim() || !selectedChatId) return;
+    if (!message.trim()) {
+      toast.error("Vui lòng nhập tin nhắn");
+      return;
+    }
+    if (!selectedChatId) {
+      toast.error("Vui lòng chọn hoặc tạo cuộc trò chuyện");
+      return;
+    }
     sendMessageMutation.mutate(message);
   };
 
