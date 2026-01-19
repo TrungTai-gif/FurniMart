@@ -68,6 +68,26 @@ export class Warehouse {
 }
 
 export const WarehouseSchema = SchemaFactory.createForClass(Warehouse);
+
+// Pre-save hook: Ensure availableQuantity is always calculated correctly
+WarehouseSchema.pre('save', function(next) {
+  // Recalculate availableQuantity to ensure consistency
+  this.availableQuantity = Math.max(0, this.quantity - this.reservedQuantity);
+  
+  // Ensure reservedQuantity doesn't exceed quantity
+  if (this.reservedQuantity > this.quantity) {
+    this.reservedQuantity = this.quantity;
+    this.availableQuantity = 0;
+  }
+  
+  // Ensure availableQuantity is never negative
+  if (this.availableQuantity < 0) {
+    this.availableQuantity = 0;
+  }
+  
+  next();
+});
+
 // Compound unique index: productId + branchId (allows same product in different branches)
 WarehouseSchema.index({ productId: 1, branchId: 1 }, { unique: true, sparse: true });
 // Index for branch filtering
