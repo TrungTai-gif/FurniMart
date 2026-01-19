@@ -4,14 +4,7 @@ import Link from "next/link";
 import PageShell from "@/components/layouts/PageShell";
 import { useQuery } from "@tanstack/react-query";
 import { settingsService } from "@/services/settingsService";
-import {
-  FiFacebook,
-  FiInstagram,
-  FiYoutube,
-  FiMail,
-  FiPhone,
-  FiMapPin,
-} from "react-icons/fi";
+import { FiFacebook, FiInstagram, FiYoutube, FiMail, FiPhone, FiMapPin } from "react-icons/fi";
 
 export default function Footer() {
   const { data: generalSettings } = useQuery({
@@ -30,8 +23,7 @@ export default function Footer() {
               {generalSettings?.siteName || "FurniMart"}
             </h3>
             <p className="text-sm text-white/90 leading-relaxed mb-6 font-medium">
-              {generalSettings?.siteDescription ||
-                "Hệ thống mua sắm nội thất đa chi nhánh tại TP.HCM"}
+              {generalSettings?.siteDescription || "Hệ thống mua sắm nội thất đa chi nhánh tại TP.HCM"}
             </p>
             {/* Social Media Links */}
             <div className="flex gap-4 mt-6">
@@ -67,47 +59,30 @@ export default function Footer() {
 
           {/* Thông tin */}
           <div>
-            <h4 className="text-white font-semibold mb-5 text-sm tracking-wider uppercase">
-              THÔNG TIN
-            </h4>
+            <h4 className="text-white font-semibold mb-5 text-sm tracking-wider uppercase">THÔNG TIN</h4>
             <ul className="space-y-3.5 text-sm">
               <li>
-                <Link
-                  href="/about"
-                  className="text-white/85 hover:text-white transition-all duration-300 inline-block hover:translate-x-1 font-medium"
-                >
+                <Link href="/about" className="text-white/85 hover:text-white transition-all duration-300 inline-block hover:translate-x-1 font-medium">
                   Về FurniMart
                 </Link>
               </li>
               <li>
-                <Link
-                  href="/policy"
-                  className="text-white/85 hover:text-white transition-all duration-300 inline-block hover:translate-x-1 font-medium"
-                >
+                <Link href="/policy" className="text-white/85 hover:text-white transition-all duration-300 inline-block hover:translate-x-1 font-medium">
                   Chính sách bảo mật
                 </Link>
               </li>
               <li>
-                <Link
-                  href="/policy"
-                  className="text-white/85 hover:text-white transition-all duration-300 inline-block hover:translate-x-1 font-medium"
-                >
+                <Link href="/policy" className="text-white/85 hover:text-white transition-all duration-300 inline-block hover:translate-x-1 font-medium">
                   Điều khoản sử dụng
                 </Link>
               </li>
               <li>
-                <Link
-                  href="/policy"
-                  className="text-white/85 hover:text-white transition-all duration-300 inline-block hover:translate-x-1 font-medium"
-                >
+                <Link href="/policy" className="text-white/85 hover:text-white transition-all duration-300 inline-block hover:translate-x-1 font-medium">
                   Chính sách đổi trả
                 </Link>
               </li>
               <li>
-                <Link
-                  href="/faq"
-                  className="text-white/85 hover:text-white transition-all duration-300 inline-block hover:translate-x-1 font-medium"
-                >
+                <Link href="/faq" className="text-white/85 hover:text-white transition-all duration-300 inline-block hover:translate-x-1 font-medium">
                   Câu hỏi thường gặp
                 </Link>
               </li>
@@ -116,39 +91,25 @@ export default function Footer() {
 
           {/* Sản phẩm */}
           <div>
-            <h4 className="text-white font-semibold mb-5 text-sm tracking-wider uppercase">
-              SẢN PHẨM
-            </h4>
+            <h4 className="text-white font-semibold mb-5 text-sm tracking-wider uppercase">SẢN PHẨM</h4>
             <ul className="space-y-3.5 text-sm">
               <li>
-                <Link
-                  href="/products"
-                  className="text-white/85 hover:text-white transition-all duration-300 inline-block hover:translate-x-1 font-medium"
-                >
+                <Link href="/products" className="text-white/85 hover:text-white transition-all duration-300 inline-block hover:translate-x-1 font-medium">
                   Tất cả sản phẩm
                 </Link>
               </li>
               <li>
-                <Link
-                  href="/categories"
-                  className="text-white/85 hover:text-white transition-all duration-300 inline-block hover:translate-x-1 font-medium"
-                >
+                <Link href="/categories" className="text-white/85 hover:text-white transition-all duration-300 inline-block hover:translate-x-1 font-medium">
                   Danh mục
                 </Link>
               </li>
               <li>
-                <Link
-                  href="/promotions"
-                  className="text-white/85 hover:text-white transition-all duration-300 inline-block hover:translate-x-1 font-medium"
-                >
+                <Link href="/promotions" className="text-white/85 hover:text-white transition-all duration-300 inline-block hover:translate-x-1 font-medium">
                   Khuyến mãi
                 </Link>
               </li>
               <li>
-                <Link
-                  href="/branches"
-                  className="text-white/85 hover:text-white transition-all duration-300 inline-block hover:translate-x-1 font-medium"
-                >
+                <Link href="/branches" className="text-white/85 hover:text-white transition-all duration-300 inline-block hover:translate-x-1 font-medium">
                   Chi nhánh
                 </Link>
               </li>
@@ -157,25 +118,18 @@ export default function Footer() {
 
           {/* Thông tin liên hệ */}
           <div>
-            <h4 className="text-white font-semibold mb-5 text-sm tracking-wider uppercase">
-              Thông tin liên hệ
-            </h4>
+            <h4 className="text-white font-semibold mb-5 text-sm tracking-wider uppercase">Thông tin liên hệ</h4>
             <ul className="space-y-3.5 text-sm">
               {generalSettings?.address && (
                 <li className="flex items-start gap-3 text-white/85">
                   <FiMapPin className="w-5 h-5 flex-shrink-0 mt-0.5 text-primary-300" />
-                  <span className="hover:text-white transition-colors duration-300 font-medium">
-                    {generalSettings.address}
-                  </span>
+                  <span className="hover:text-white transition-colors duration-300 font-medium">{generalSettings.address}</span>
                 </li>
               )}
               {generalSettings?.contactPhone && (
                 <li className="flex items-center gap-3 text-white/85">
                   <FiPhone className="w-5 h-5 flex-shrink-0 text-primary-300" />
-                  <a
-                    href={`tel:${generalSettings.contactPhone}`}
-                    className="hover:text-white transition-colors duration-300 font-medium"
-                  >
+                  <a href={`tel:${generalSettings.contactPhone}`} className="hover:text-white transition-colors duration-300 font-medium">
                     {generalSettings.contactPhone}
                   </a>
                 </li>
@@ -183,10 +137,7 @@ export default function Footer() {
               {generalSettings?.contactEmail && (
                 <li className="flex items-center gap-3 text-white/85">
                   <FiMail className="w-5 h-5 flex-shrink-0 text-primary-300" />
-                  <a
-                    href={`mailto:${generalSettings.contactEmail}`}
-                    className="hover:text-white transition-colors duration-300 font-medium"
-                  >
+                  <a href={`mailto:${generalSettings.contactEmail}`} className="hover:text-white transition-colors duration-300 font-medium">
                     {generalSettings.contactEmail}
                   </a>
                 </li>
@@ -195,12 +146,10 @@ export default function Footer() {
           </div>
         </div>
         <div className="mt-12 pt-8 border-t border-white/10 text-center text-sm text-white/70">
-          <p>
-            &copy; {new Date().getFullYear()}{" "}
-            {generalSettings?.siteName || "FurniMart"}. All rights reserved.
-          </p>
+          <p>&copy; {new Date().getFullYear()} {generalSettings?.siteName || "FurniMart"}. All rights reserved.</p>
         </div>
       </PageShell>
     </footer>
   );
 }
+
