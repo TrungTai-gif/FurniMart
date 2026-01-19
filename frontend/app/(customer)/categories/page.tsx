@@ -11,7 +11,12 @@ import ErrorState from "@/components/ui/ErrorState";
 import { normalizeImageUrl } from "@/lib/imageUtils";
 
 export default function CategoriesPage() {
-  const { data: categories, isLoading, isError, refetch } = useQuery({
+  const {
+    data: categories,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ["categories"],
     queryFn: () => categoryService.getCategories(),
   });
@@ -20,10 +25,7 @@ export default function CategoriesPage() {
     <PageShell>
       <PageHeader
         title="Danh mục sản phẩm"
-        breadcrumbs={[
-          { label: "Trang chủ", href: "/" },
-          { label: "Danh mục" },
-        ]}
+        breadcrumbs={[{ label: "Trang chủ", href: "/" }, { label: "Danh mục" }]}
       />
       <main className="space-y-8">
         <section className="rounded-2xl border border-secondary-200 bg-gradient-to-br from-white via-white to-secondary-50 p-6 md:p-8">
@@ -35,8 +37,8 @@ export default function CategoriesPage() {
               Danh mục được sắp xếp rõ ràng, dễ lựa chọn
             </h2>
             <p className="text-secondary-600">
-              Chọn danh mục phù hợp để xem nhanh các sản phẩm nổi bật, chất liệu mới và xu hướng
-              đang được yêu thích.
+              Chọn danh mục phù hợp để xem nhanh các sản phẩm nổi bật, chất liệu
+              mới và xu hướng đang được yêu thích.
             </p>
           </div>
         </section>
@@ -62,10 +64,14 @@ export default function CategoriesPage() {
         ) : categories && categories.length > 0 ? (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
             {categories.map((category) => {
-              const imageUrl = normalizeImageUrl(category.image) || category.image;
+              const imageUrl =
+                normalizeImageUrl(category.image) || category.image;
               const initial = category.name?.charAt(0)?.toUpperCase() || "D";
               return (
-                <Link key={category.id} href={`/products?categoryId=${category.id}`}>
+                <Link
+                  key={category.id}
+                  href={`/products?categoryId=${category.id}`}
+                >
                   <Card
                     variant="elevated"
                     hoverable
@@ -103,7 +109,9 @@ export default function CategoriesPage() {
                             </p>
                           )}
                         </div>
-                        <span className="mt-1 text-sm font-medium text-primary-600">→</span>
+                        <span className="mt-1 text-sm font-medium text-primary-600">
+                          →
+                        </span>
                       </div>
                       <p className="mt-4 text-xs font-medium uppercase tracking-wide text-secondary-500">
                         Xem sản phẩm
