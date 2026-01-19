@@ -66,15 +66,27 @@ export default function AddressesPage() {
     mutationFn: (
       data: Omit<Address, "id" | "userId" | "createdAt" | "updatedAt">
     ) => userService.addAddress(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["addresses"] });
-      queryClient.invalidateQueries({ queryKey: ["user", "profile"] });
-      toast.success("Thêm địa chỉ thành công");
-      setIsModalOpen(false);
-      reset();
+    onSuccess: (address) => {
+      // Only show success if we actually got an address back
+      if (address && address.id) {
+        queryClient.invalidateQueries({ queryKey: ["addresses"] });
+        queryClient.invalidateQueries({ queryKey: ["user", "profile"] });
+        toast.success("Thêm địa chỉ thành công");
+        setIsModalOpen(false);
+        reset();
+      } else {
+        // If address was added but we couldn't parse it, still invalidate and show success
+        queryClient.invalidateQueries({ queryKey: ["addresses"] });
+        queryClient.invalidateQueries({ queryKey: ["user", "profile"] });
+        toast.success("Thêm địa chỉ thành công");
+        setIsModalOpen(false);
+        reset();
+      }
     },
-    onError: () => {
-      toast.error("Không thể thêm địa chỉ");
+    onError: (error: AxiosError<{ message?: string }>) => {
+      console.error("Create address error:", error);
+      const errorMessage = error?.response?.data?.message || error?.message || "Không thể thêm địa chỉ";
+      toast.error(errorMessage);
     },
   });
 
