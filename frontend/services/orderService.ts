@@ -155,5 +155,13 @@ export const orderService = {
     }>>(endpoints.orders.auditLogs(id));
     return response.data;
   },
+
+  updateItemQuantity: async (orderId: string, productId: string, quantity: number): Promise<Order> => {
+    const response = await apiClient.patch<Order>(
+      endpoints.orders.updateItemQuantity(orderId, productId),
+      { quantity }
+    );
+    return response.data;
+  },
 };
 
