@@ -7,6 +7,7 @@ import { AuditLogService } from './audit-log.service';
 import { Order, OrderSchema } from './schemas/order.schema';
 import { AuditLog, AuditLogSchema } from './schemas/audit-log.schema';
 import { AuthModule } from '@shared/common/auth/auth.module';
+import { EmailModule } from '../email/email.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { AuthModule } from '@shared/common/auth/auth.module';
       maxRedirects: 5,
     }),
     AuthModule,
+    EmailModule,
   ],
   controllers: [OrdersController],
   providers: [OrdersService, AuditLogService],
