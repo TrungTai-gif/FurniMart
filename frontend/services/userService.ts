@@ -43,15 +43,13 @@ export const userService = {
     return response.data;
   },
 
-  getUsers: async (
-    filters: { role?: string; branchId?: string } | string = {}
-  ): Promise<User[]> => {
+  getUsers: async (filters: { role?: string; branchId?: string } | string = {}): Promise<User[]> => {
     const params = new URLSearchParams();
-    if (typeof filters === "string") {
-      params.append("role", filters);
+    if (typeof filters === 'string') {
+      params.append('role', filters);
     } else {
-      if (filters.role) params.append("role", filters.role);
-      if (filters.branchId) params.append("branchId", filters.branchId);
+      if (filters.role) params.append('role', filters.role);
+      if (filters.branchId) params.append('branchId', filters.branchId);
     }
     const queryString = params.toString() ? `?${params.toString()}` : "";
     const response = await apiClient.get<User[]>(
@@ -109,28 +107,20 @@ export const userService = {
         endpoints.users.addresses,
         address
       );
-
+      
       // Backend returns full user object, extract the last address added
       const user = response.data;
-
+      
       // Log for debugging
-      console.log("Add address response:", {
-        user,
-        addresses: user?.addresses,
-      });
-
-      if (
-        user &&
-        user.addresses &&
-        Array.isArray(user.addresses) &&
-        user.addresses.length > 0
-      ) {
+      console.log("Add address response:", { user, addresses: user?.addresses });
+      
+      if (user && user.addresses && Array.isArray(user.addresses) && user.addresses.length > 0) {
         const addedAddress = user.addresses[user.addresses.length - 1];
         const normalized = normalizeAddress(addedAddress);
         console.log("Normalized address:", normalized);
         return normalized;
       }
-
+      
       // If addresses array is empty or doesn't exist, check if response has address directly
       // Backend might return the address object directly in some cases
       if (response.data && typeof response.data === "object") {
@@ -140,12 +130,10 @@ export const userService = {
           return normalizeAddress(data);
         }
       }
-
+      
       // If we reach here, backend returned success but we can't find the address
       // This shouldn't happen, but we'll return a basic structure to prevent error
-      console.warn(
-        "Could not extract address from response, but request succeeded"
-      );
+      console.warn("Could not extract address from response, but request succeeded");
       return {
         id: `temp-${Date.now()}`,
         name: address.name || "",
@@ -176,7 +164,8 @@ export const userService = {
     const user = response.data;
     if (user && user.addresses) {
       const updated = (user.addresses as AddressDocument[]).find(
-        (addr) => addr._id?.toString() === addressId || addr.id === addressId
+        (addr) =>
+          addr._id?.toString() === addressId || addr.id === addressId
       );
       if (updated) {
         return normalizeAddress(updated);
@@ -199,7 +188,8 @@ export const userService = {
     const user = response.data;
     if (user && user.addresses) {
       const updated = (user.addresses as AddressDocument[]).find(
-        (addr) => addr._id?.toString() === addressId || addr.id === addressId
+        (addr) =>
+          addr._id?.toString() === addressId || addr.id === addressId
       );
       if (updated) {
         return normalizeAddress(updated);
