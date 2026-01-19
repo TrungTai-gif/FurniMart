@@ -67,6 +67,16 @@ export class WarehouseController {
     return this.warehouseService.getInventory(branchId, productId);
   }
 
+  @Get('internal/inventory')
+  @ApiOperation({ summary: 'Lấy danh sách tồn kho (Internal service call - không cần auth)' })
+  async getInventoryInternal(
+    @Query('branchId') branchId?: string, 
+    @Query('productId') productId?: string,
+  ) {
+    // Internal endpoint for branch service - no auth required
+    return this.warehouseService.getInventory(branchId, productId);
+  }
+
   @Get('low-stock')
   @ApiBearerAuth()
   @UseGuards(AuthGuard('jwt'), RolesGuard)
@@ -132,6 +142,16 @@ export class WarehouseController {
     return this.warehouseService.reserveStock(productId, body.quantity, body.branchId);
   }
 
+  @Post('internal/reserve/:productId')
+  @ApiOperation({ summary: 'Đặt trước hàng (Internal service call - không cần auth)' })
+  async reserveStockInternal(
+    @Param('productId') productId: string,
+    @Body() body: { quantity: number; branchId?: string },
+  ) {
+    // Internal endpoint for order service - no auth required
+    return this.warehouseService.reserveStock(productId, body.quantity, body.branchId);
+  }
+
   @Post('release/:productId')
   @ApiBearerAuth()
   @UseGuards(AuthGuard('jwt'), RolesGuard)
@@ -141,6 +161,16 @@ export class WarehouseController {
     @Param('productId') productId: string,
     @Body() body: { quantity: number; branchId?: string },
   ) {
+    return this.warehouseService.releaseReservedStock(productId, body.quantity, body.branchId);
+  }
+
+  @Post('internal/release/:productId')
+  @ApiOperation({ summary: 'Giải phóng hàng đã đặt (Internal service call - không cần auth)' })
+  async releaseReservedStockInternal(
+    @Param('productId') productId: string,
+    @Body() body: { quantity: number; branchId?: string },
+  ) {
+    // Internal endpoint for order service - no auth required
     return this.warehouseService.releaseReservedStock(productId, body.quantity, body.branchId);
   }
 }
