@@ -4,10 +4,12 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { UserModule } from '../user/user.module';
+import { EmailModule } from '../email/email.module';
 
 @Module({
   imports: [
     UserModule,
+    EmailModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'furnimart-secret-key-2024',
       signOptions: { expiresIn: '7d' },
