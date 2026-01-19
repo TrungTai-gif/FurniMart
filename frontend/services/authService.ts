@@ -50,5 +50,21 @@ export const authService = {
   logout: async (): Promise<void> => {
     await apiClient.post(endpoints.auth.logout);
   },
+
+  forgotPassword: async (email: string): Promise<{ message: string }> => {
+    const response = await apiClient.post<{ message: string }>(
+      endpoints.auth.forgotPassword,
+      { email }
+    );
+    return response.data;
+  },
+
+  resetPassword: async (token: string, password: string): Promise<{ message: string }> => {
+    const response = await apiClient.post<{ message: string }>(
+      endpoints.auth.resetPassword,
+      { token, password }
+    );
+    return response.data;
+  },
 };
 
