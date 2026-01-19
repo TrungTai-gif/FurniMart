@@ -62,7 +62,10 @@ export default function ProductsPage() {
           <PageHeader
             title="Sản phẩm"
             description="Khám phá bộ sưu tập nội thất tinh tế, chọn lọc theo phong cách hiện đại và tiện nghi."
-            breadcrumbs={[{ label: "Trang chủ", href: routes.home }, { label: "Sản phẩm" }]}
+            breadcrumbs={[
+              { label: "Trang chủ", href: routes.home },
+              { label: "Sản phẩm" },
+            ]}
             className="mb-8"
           />
           <div className="rounded-2xl border border-white/60 bg-white/80 shadow-sm backdrop-blur px-4 py-4 md:px-6">
