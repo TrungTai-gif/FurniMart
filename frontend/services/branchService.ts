@@ -10,8 +10,16 @@ interface BranchFilters {
 }
 
 interface InventoryItem {
+  id?: string;
+  _id?: string;
+  productId: string;
   product?: { name: string; id: string };
   quantity: number;
+  availableQuantity?: number;
+  reservedQuantity?: number;
+  minStockLevel?: number;
+  maxStockLevel?: number;
+  location?: string;
   [key: string]: unknown;
 }
 
@@ -64,9 +72,16 @@ export const branchService = {
   },
 
   getBranchInventory: async (branchId: string, productId?: string): Promise<InventoryItem[]> => {
-    const params = productId ? `?productId=${productId}` : "";
-    const response = await apiClient.get<InventoryItem[]>(`${endpoints.branches.inventory(branchId)}${params}`);
-    return response.data;
+    try {
+      const params = productId ? `?productId=${productId}` : "";
+      const response = await apiClient.get<InventoryItem[]>(`${endpoints.branches.inventory(branchId)}${params}`);
+      return response.data || [];
+    } catch (error) {
+      logger.apiError(error, "Get Branch Inventory");
+      // Return empty array on error to prevent UI crashes
+      // The UI will handle empty array as "no inventory" or show error state
+      throw error; // Re-throw to let React Query handle retry logic
+    }
   },
 
   create: async (data: Partial<Branch>): Promise<Branch> => {
