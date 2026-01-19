@@ -63,29 +63,67 @@ export default function ManagerInventoryPage() {
       try {
         const branchInventory = await branchService.getBranchInventory(branchId || "");
         if (branchInventory && branchInventory.length > 0) {
-          inventoryItems = branchInventory as unknown as LocalInventoryItem[];
+          inventoryItems = branchInventory.map((item: any) => {
+            const quantity = item.quantity || 0;
+            const reservedQuantity = item.reservedQuantity || 0;
+            // Calculate availableQuantity correctly: prefer availableQuantity from API, otherwise calculate from quantity - reservedQuantity
+            const availableQuantity = item.availableQuantity !== undefined && item.availableQuantity !== null
+              ? item.availableQuantity
+              : Math.max(0, quantity - reservedQuantity);
+            
+            return {
+              id: item.id || item._id || "",
+              productId: item.productId,
+              product: item.product || { id: item.productId, name: "N/A" },
+              quantity,
+              reservedQuantity,
+              availableQuantity,
+              minStockLevel: item.minStockLevel || 10,
+              maxStockLevel: item.maxStockLevel || 100,
+              location: item.location || "Kho chính",
+              status: availableQuantity > (item.minStockLevel || 10) 
+                ? "in_stock" 
+                : availableQuantity > 0 
+                  ? "low_stock" 
+                  : "out_of_stock",
+              lastUpdated: item.updatedAt || item.createdAt || new Date().toISOString(),
+            };
+          }) as LocalInventoryItem[];
         }
       } catch (error) {
-        console.log("Branch inventory not available, trying warehouse service");
+        console.log("Branch inventory not available, trying warehouse service", error);
       }
 
       // If no branch inventory, try warehouse service
       if (inventoryItems.length === 0) {
         try {
           const warehouseInventory = await warehouseService.getInventory(branchId || undefined);
-          inventoryItems = warehouseInventory.map((item) => ({
-            id: item.id,
-            productId: item.productId,
-            product: item.product || { id: item.productId, name: (item as any).productName || "N/A" },
-            quantity: item.quantity || 0,
-            reservedQuantity: item.reservedQuantity || 0,
-            availableQuantity: item.availableQuantity || 0,
-            minStockLevel: item.minStockLevel || 10,
-            maxStockLevel: item.maxStockLevel || 100,
-            location: item.location || "Kho chính",
-            status: (item.availableQuantity || 0) > (item.minStockLevel || 10) ? "in_stock" : "low_stock",
-            lastUpdated: (item as { updatedAt?: string }).updatedAt || new Date().toISOString(),
-          })) as LocalInventoryItem[];
+          inventoryItems = warehouseInventory.map((item) => {
+            const quantity = item.quantity || 0;
+            const reservedQuantity = item.reservedQuantity || 0;
+            // Calculate availableQuantity correctly: prefer availableQuantity from API, otherwise calculate from quantity - reservedQuantity
+            const availableQuantity = item.availableQuantity !== undefined && item.availableQuantity !== null
+              ? item.availableQuantity
+              : Math.max(0, quantity - reservedQuantity);
+            
+            return {
+              id: item.id,
+              productId: item.productId,
+              product: item.product || { id: item.productId, name: (item as any).productName || "N/A" },
+              quantity,
+              reservedQuantity,
+              availableQuantity,
+              minStockLevel: item.minStockLevel || 10,
+              maxStockLevel: item.maxStockLevel || 100,
+              location: item.location || "Kho chính",
+              status: availableQuantity > (item.minStockLevel || 10) 
+                ? "in_stock" 
+                : availableQuantity > 0 
+                  ? "low_stock" 
+                  : "out_of_stock",
+              lastUpdated: (item as { updatedAt?: string }).updatedAt || new Date().toISOString(),
+            };
+          }) as LocalInventoryItem[];
         } catch (error) {
           console.error("Error fetching inventory:", error);
           return [];
