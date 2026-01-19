@@ -84,3 +84,27 @@ export interface LoginResponseDto {
  * Response DTO for registration - same as login response
  */
 export interface RegisterResponseDto extends LoginResponseDto { }
+
+/**
+ * Request DTO for forgot password
+ */
+export class ForgotPasswordDto {
+  @ApiProperty({ description: 'User email address', example: 'user@furnimart.vn' })
+  @IsEmail()
+  email!: string;
+}
+
+/**
+ * Request DTO for reset password
+ */
+export class ResetPasswordDto {
+  @ApiProperty({ description: 'Reset token from email' })
+  @IsString()
+  @IsNotEmpty()
+  token!: string;
+
+  @ApiProperty({ description: 'New password (min 6 characters)', example: 'newpassword123' })
+  @IsString()
+  @MinLength(6)
+  password!: string;
+}
