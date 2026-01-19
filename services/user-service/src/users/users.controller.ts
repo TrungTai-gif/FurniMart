@@ -16,8 +16,9 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from "@nestjs/swagger";
 import { AuthGuard } from "@nestjs/passport";
 import { UsersService } from "./users.service";
 import { CurrentUser } from "@shared/common/decorators/user.decorator";
-import { Roles } from "@shared/common/decorators/roles.decorator";
+import { Roles, Public } from "@shared/common/decorators/roles.decorator";
 import { RolesGuard } from "@shared/common/guards/roles.guard";
+import { JwtAuthGuard } from "@shared/common/guards/jwt-auth.guard";
 import {
   UpdateUserDto,
   AddAddressDto,
@@ -26,7 +27,7 @@ import {
 
 @ApiTags("Users")
 @ApiBearerAuth()
-@UseGuards(AuthGuard("jwt"))
+@UseGuards(JwtAuthGuard)
 @Controller("users")
 export class UsersController {
   constructor(private usersService: UsersService) {}

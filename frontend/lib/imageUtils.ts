@@ -63,7 +63,19 @@ export function normalizeImageUrl(
     return withApiRoot(imageUrl);
   }
 
+  // Keep public folder paths as-is (Next.js serves from /public)
+  // Only normalize if it's from backend/API
   if (imageUrl.startsWith("/images/")) {
+    // Check if it's a static file in public folder (like hero-banner.jpg)
+    // These should be kept as-is for Next.js to serve
+    const publicStaticFiles = ["hero-banner.jpg", "logo.png", "default"];
+    const isStaticFile = publicStaticFiles.some((file) =>
+      imageUrl.includes(file)
+    );
+    if (isStaticFile) {
+      return imageUrl; // Keep as-is for Next.js public folder
+    }
+    // Otherwise, it's from backend API
     return withApiRoot(imageUrl);
   }
 
