@@ -1,14 +1,19 @@
-import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, BadRequestException, UnauthorizedException, NotFoundException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
+import * as crypto from 'crypto';
 import { UserService } from '../user/user.service';
-import { LoginDto, RegisterDto } from './dtos/auth.dto';
+import { EmailService } from '../email/email.service';
+import { LoginDto, RegisterDto, ForgotPasswordDto, ResetPasswordDto } from './dtos/auth.dto';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private userService: UserService,
     private jwtService: JwtService,
+    private emailService: EmailService,
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -93,6 +98,71 @@ export class AuthService {
     } catch (error) {
       throw new UnauthorizedException('Token không hợp lệ hoặc đã hết hạn');
     }
+  }
+
+  async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<{ message: string }> {
+    const user = await this.userService.findByEmail(forgotPasswordDto.email);
+    
+    // Don't reveal if email exists or not for security
+    if (!user) {
+      return { message: 'Nếu email tồn tại, chúng tôi đã gửi liên kết đặt lại mật khẩu.' };
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpiry = new Date();
+    resetTokenExpiry.setHours(resetTokenExpiry.getHours() + 1); // Token expires in 1 hour
+
+    // Save reset token to user
+    await this.userService.update(user._id.toString(), {
+      resetToken,
+      resetTokenExpiry,
+    });
+
+    // Send email
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const resetUrl = `${frontendUrl}/auth/reset-password?token=${resetToken}`;
+
+    try {
+      await this.emailService.sendPasswordResetEmail(user.email, resetToken, resetUrl);
+      this.logger.log(`Password reset email sent successfully to ${user.email}`);
+    } catch (error) {
+      // Log error but don't reveal to user
+      this.logger.error(`Failed to send password reset email to ${user.email}:`, error);
+      this.logger.error('Error details:', error instanceof Error ? error.message : String(error));
+      // Check if it's a configuration issue
+      if (error instanceof Error && error.message.includes('not configured')) {
+        this.logger.error('Email service is not configured. Please check GMAIL_USER and GMAIL_APP_PASSWORD environment variables.');
+      }
+    }
+
+    return { message: 'Nếu email tồn tại, chúng tôi đã gửi liên kết đặt lại mật khẩu.' };
+  }
+
+  async resetPassword(resetPasswordDto: ResetPasswordDto): Promise<{ message: string }> {
+    // Find user by reset token
+    const user = await this.userService.findByResetToken(resetPasswordDto.token);
+    
+    if (!user) {
+      throw new BadRequestException('Token không hợp lệ hoặc đã hết hạn');
+    }
+
+    // Check if token is expired
+    if (!user.resetTokenExpiry || user.resetTokenExpiry < new Date()) {
+      throw new BadRequestException('Token đã hết hạn. Vui lòng yêu cầu lại.');
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(resetPasswordDto.password, 10);
+
+    // Update password and clear reset token
+    await this.userService.update(user._id.toString(), {
+      password: hashedPassword,
+      resetToken: undefined,
+      resetTokenExpiry: undefined,
+    });
+
+    return { message: 'Mật khẩu đã được đặt lại thành công' };
   }
 
   private formatUserResponse(user: any) {
