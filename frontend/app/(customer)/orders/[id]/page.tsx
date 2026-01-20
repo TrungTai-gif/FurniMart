@@ -267,17 +267,25 @@ export default function OrderDetailPage() {
                       <p className="text-sm text-secondary-500">Trạng thái thanh toán</p>
                       <Badge
                         variant={
-                          order.paymentStatus === "paid"
+                          (order.paymentStatus?.toUpperCase() === "PAID" || order.isPaid)
                             ? "success"
-                            : order.paymentStatus === "pending"
-                              ? "warning"
-                              : "danger"
+                            : (order.paymentStatus?.toUpperCase() === "UNPAID" || order.paymentStatus?.toUpperCase() === "PENDING")
+                            ? "warning"
+                            : order.paymentStatus === "REFUND_PENDING"
+                            ? "info"
+                            : order.paymentStatus === "REFUNDED"
+                            ? "success"
+                            : "danger"
                         }
                       >
-                        {order.paymentStatus === "paid"
-                          ? "Đã thanh toán"
-                          : order.paymentStatus === "pending"
+                        {(order.paymentStatus?.toUpperCase() === "PAID" || order.isPaid)
+                            ? "Đã thanh toán"
+                            : (order.paymentStatus?.toUpperCase() === "UNPAID" || order.paymentStatus?.toUpperCase() === "PENDING")
                             ? "Chờ thanh toán"
+                            : order.paymentStatus === "REFUND_PENDING"
+                            ? "Đang hoàn tiền"
+                            : order.paymentStatus === "REFUNDED"
+                            ? "Đã hoàn tiền"
                             : "Thất bại"}
                       </Badge>
                     </div>
