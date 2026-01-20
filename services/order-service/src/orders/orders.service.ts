@@ -555,7 +555,7 @@ export class OrdersService {
     
     const query: any = {
       branchId: shipperBranchId,
-      status: { $in: ['CONFIRMED', 'PACKING', 'OUT_FOR_DELIVERY', 'DELIVERED', 'DELIVERY_FAILED'] },
+      status: { $in: ['CONFIRMED', 'PACKING', 'READY_TO_SHIP', 'SHIPPING', 'DELIVERED', 'FAILED_DELIVERY', 'OUT_FOR_DELIVERY', 'DELIVERY_FAILED'] },
     };
     
     // Shipper thấy tất cả đơn hàng của branch, nhưng ưu tiên các đơn đã được gán cho mình
