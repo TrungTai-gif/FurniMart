@@ -217,7 +217,7 @@ export default function AddressesPage() {
           </Button>
         }
       />
-      <main className="space-y-6">
+      <main className="space-y-6 pb-12">
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {[...Array(4)].map((_, i) => (
