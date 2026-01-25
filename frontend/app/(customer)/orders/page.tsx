@@ -2,7 +2,10 @@
 
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { orderService } from "@/services/orderService";
+import { useAuthStore } from "@/store/authStore";
 import Card, { CardContent } from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
@@ -18,11 +21,46 @@ import OrderStatusBadge from "@/components/order/OrderStatusBadge";
 import Pagination from "@/components/ui/Pagination";
 
 export default function OrdersPage() {
+  const router = useRouter();
+  const { isAuthenticated, user, accessToken, role, _hasHydrated } = useAuthStore();
   const [page, setPage] = useState(1);
+
+  // Check authentication - redirect to login if not authenticated
+  // Wait for hydration before checking
+  useEffect(() => {
+    if (!_hasHydrated) {
+      return; // Wait for state to be restored
+    }
+    
+    if (!isAuthenticated || !accessToken || !user) {
+      router.push("/auth/login?redirect=/orders");
+      return;
+    }
+    // Only allow customer role
+    if (role && role !== "customer") {
+      router.push("/");
+      return;
+    }
+  }, [_hasHydrated, isAuthenticated, accessToken, user, role, router]);
+
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["orders", "my", page],
     queryFn: () => orderService.getMyOrders(),
+    enabled: isAuthenticated && !!accessToken && !!user && role === "customer",
   });
+
+  // Don't render if not hydrated or not authenticated
+  if (!_hasHydrated) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+  
+  if (!isAuthenticated || !accessToken || !user || role !== "customer") {
+    return null;
+  }
 
   return (
     <PageShell>
