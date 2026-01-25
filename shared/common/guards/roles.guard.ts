@@ -1,8 +1,13 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
-import { ROLES_KEY } from '../decorators/roles.decorator';
-import { IS_PUBLIC_KEY } from '../decorators/roles.decorator';
-import { Role } from '../../config/rbac-matrix';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+} from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
+import { ROLES_KEY } from "../decorators/roles.decorator";
+import { IS_PUBLIC_KEY } from "../decorators/roles.decorator";
+import { Role } from "../../config/rbac-matrix";
 
 /**
  * Guard to enforce role-based access control
@@ -10,7 +15,7 @@ import { Role } from '../../config/rbac-matrix';
  */
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private reflector: Reflector) { }
+  constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
     // Check if route is public
@@ -38,7 +43,7 @@ export class RolesGuard implements CanActivate {
     const user = request.user;
 
     if (!user) {
-      throw new ForbiddenException('User not authenticated');
+      throw new ForbiddenException("User not authenticated");
     }
 
     const userRole = user.role as Role;
@@ -46,7 +51,9 @@ export class RolesGuard implements CanActivate {
 
     if (!hasRole) {
       throw new ForbiddenException(
-        `Access denied. Required roles: [${requiredRoles.join(', ')}]. Your role: ${userRole}`,
+        `Access denied. Required roles: [${requiredRoles.join(
+          ", "
+        )}]. Your role: ${userRole}`
       );
     }
 
