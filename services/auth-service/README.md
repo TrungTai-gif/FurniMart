@@ -33,6 +33,11 @@
 ### Configuration
 - **@nestjs/config** (v3.1.0): Quản lý environment variables và configuration
 
+### Email Service
+- **nodemailer** (v6.9.7): Thư viện gửi email
+- Sử dụng Gmail SMTP để gửi email đặt lại mật khẩu
+- Hỗ trợ HTML email templates
+
 ### Shared Modules
 - **@shared/common**: Shared package chứa các utilities, decorators, filters, và interceptors dùng chung trong hệ thống
   - `HttpExceptionFilter`: Xử lý exceptions toàn cục
@@ -60,11 +65,14 @@ auth-service/
 │   │   │   └── auth.dto.ts    # Data Transfer Objects
 │   │   └── strategies/
 │   │       └── jwt.strategy.ts # Passport JWT strategy
-│   └── user/                  # User management module
-│       ├── user.module.ts
-│       ├── user.service.ts    # User CRUD operations
-│       └── schemas/
-│           └── user.schema.ts # Mongoose schema definition
+│   ├── user/                  # User management module
+│   │   ├── user.module.ts
+│   │   ├── user.service.ts    # User CRUD operations
+│   │   └── schemas/
+│   │       └── user.schema.ts # Mongoose schema definition
+│   └── email/                 # Email service module
+│       ├── email.module.ts
+│       └── email.service.ts   # Email sending service
 ```
 
 ### Luồng xác thực (Authentication Flow)
@@ -117,6 +125,30 @@ AuthService.refreshToken()
   ├─→ Check user exists & isActive
   ├─→ Generate new JWT token
   └─→ Return: { accessToken, refreshToken, user }
+```
+
+#### 5. Quên mật khẩu (Forgot Password)
+```
+Client → POST /api/auth/forgot-password
+  ↓
+AuthService.forgotPassword()
+  ├─→ Tìm user theo email
+  ├─→ Generate reset token (crypto.randomBytes)
+  ├─→ Lưu resetToken & resetTokenExpiry (1 hour)
+  ├─→ Gửi email với reset link
+  └─→ Return: { message }
+```
+
+#### 6. Đặt lại mật khẩu (Reset Password)
+```
+Client → POST /api/auth/reset-password
+  ↓
+AuthService.resetPassword()
+  ├─→ Tìm user theo resetToken
+  ├─→ Kiểm tra token chưa hết hạn
+  ├─→ Hash password mới
+  ├─→ Cập nhật password & xóa resetToken
+  └─→ Return: { message }
 ```
 
 ### JWT Token Structure
@@ -239,6 +271,39 @@ http://localhost:3002/api
   }
   ```
 
+##### Quên mật khẩu
+- **POST** `/auth/forgot-password`
+- **Body**:
+  ```json
+  {
+    "email": "user@furnimart.vn"
+  }
+  ```
+- **Response** (200):
+  ```json
+  {
+    "message": "Nếu email tồn tại, chúng tôi đã gửi liên kết đặt lại mật khẩu."
+  }
+  ```
+- **Lưu ý**: Service luôn trả về message giống nhau để bảo mật (không tiết lộ email có tồn tại hay không)
+
+##### Đặt lại mật khẩu
+- **POST** `/auth/reset-password`
+- **Body**:
+  ```json
+  {
+    "token": "reset-token-from-email",
+    "password": "newpassword123"
+  }
+  ```
+- **Response** (200):
+  ```json
+  {
+    "message": "Mật khẩu đã được đặt lại thành công"
+  }
+  ```
+- **Error** (400): Token không hợp lệ hoặc đã hết hạn
+
 ### Swagger Documentation
 
 API documentation có sẵn tại:
@@ -298,9 +363,22 @@ MONGODB_URI=mongodb://localhost:27017/furnimart
 
 # JWT
 JWT_SECRET=your-super-secret-jwt-key-change-in-production
+
+# Email Service (Gmail)
+GMAIL_USER=your-email@gmail.com
+GMAIL_APP_PASSWORD=your-gmail-app-password
+
+# Frontend URL (for password reset links)
+FRONTEND_URL=http://localhost:3000
 ```
 
-**⚠️ Lưu ý**: Trong production, sử dụng strong, random secret key cho `JWT_SECRET`.
+**⚠️ Lưu ý**: 
+- Trong production, sử dụng strong, random secret key cho `JWT_SECRET` (ít nhất 32 ký tự).
+- Để sử dụng email service, bạn cần:
+  1. Tạo Gmail App Password: https://myaccount.google.com/apppasswords
+  2. Đặt `GMAIL_USER` là địa chỉ email Gmail của bạn
+  3. Đặt `GMAIL_APP_PASSWORD` là App Password đã tạo
+  4. Nếu không cấu hình email, service vẫn hoạt động nhưng chức năng forgot/reset password sẽ không gửi được email
 
 ### Chạy Development Mode
 ```bash
@@ -330,6 +408,9 @@ docker run -d \
   -e PORT=3002 \
   -e MONGODB_URI=mongodb://mongodb:27017/furnimart \
   -e JWT_SECRET=your-secret-key \
+  -e GMAIL_USER=your-email@gmail.com \
+  -e GMAIL_APP_PASSWORD=your-gmail-app-password \
+  -e FRONTEND_URL=https://your-frontend-domain.com \
   -e NODE_ENV=production \
   furnimart-auth-service:latest
 ```
@@ -365,11 +446,14 @@ services/auth-service/
     │   │   └── auth.dto.ts
     │   └── strategies/
     │       └── jwt.strategy.ts
-    └── user/              # User management module
-        ├── user.module.ts
-        ├── user.service.ts
-        └── schemas/
-            └── user.schema.ts
+    ├── user/              # User management module
+    │   ├── user.module.ts
+    │   ├── user.service.ts
+    │   └── schemas/
+    │       └── user.schema.ts
+    └── email/             # Email service module
+        ├── email.module.ts
+        └── email.service.ts
 ```
 
 ## 🗄️ Database Schema
@@ -394,6 +478,8 @@ services/auth-service/
     city: string
     isDefault: boolean
   }>
+  resetToken?: string (for password reset)
+  resetTokenExpiry?: Date (expires in 1 hour)
   isActive: boolean (default: true)
   createdAt: Date (auto)
   updatedAt: Date (auto)
@@ -443,6 +529,25 @@ curl -X POST http://localhost:3002/api/auth/me \
   -H "Authorization: Bearer <your-token>"
 ```
 
+**Forgot Password:**
+```bash
+curl -X POST http://localhost:3002/api/auth/forgot-password \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "test@furnimart.vn"
+  }'
+```
+
+**Reset Password:**
+```bash
+curl -X POST http://localhost:3002/api/auth/reset-password \
+  -H "Content-Type: application/json" \
+  -d '{
+    "token": "reset-token-from-email",
+    "password": "newpassword123"
+  }'
+```
+
 ## 📝 Scripts
 
 - `npm run dev`: Chạy development mode với hot reload
@@ -461,15 +566,27 @@ curl -X POST http://localhost:3002/api/auth/me \
 7. **Logging**: Thêm logging cho security events (failed login attempts, etc.)
 8. **Monitoring**: Setup monitoring và alerting cho service health
 
-## 🔮 Tính năng tương lai (TODO)
+## 📧 Email Service Configuration
 
-- [ ] Implement proper refresh token mechanism (hiện tại refresh token = access token)
-- [ ] Token blacklist cho logout
-- [ ] Rate limiting cho authentication endpoints
-- [ ] Two-factor authentication (2FA)
-- [ ] Password reset functionality
-- [ ] Email verification
-- [ ] OAuth integration (Google, Facebook)
-- [ ] Session management
-- [ ] Audit logging
+### Gmail App Password Setup
 
+1. Truy cập: https://myaccount.google.com/apppasswords
+2. Đăng nhập với tài khoản Gmail của bạn
+3. Chọn "Mail" và "Other (Custom name)"
+4. Nhập tên: "FurniMart Auth Service"
+5. Nhấn "Generate"
+6. Sao chép mật khẩu 16 ký tự được tạo
+7. Đặt vào biến môi trường `GMAIL_APP_PASSWORD`
+
+**Lưu ý**: 
+- Không sử dụng mật khẩu Gmail thông thường
+- App Password là cách an toàn để ứng dụng truy cập Gmail
+- Nếu không cấu hình email, service vẫn chạy nhưng chức năng forgot/reset password sẽ không gửi được email
+
+### Email Template
+
+Service sử dụng HTML email template cho password reset với:
+- Design hiện đại, responsive
+- Link đặt lại mật khẩu
+- Thông báo hết hạn (1 giờ)
+- Branding FurniMart

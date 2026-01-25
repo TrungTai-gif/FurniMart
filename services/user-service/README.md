@@ -58,7 +58,8 @@ user-service/
 │   └── users/                 # User management module
 │       ├── users.module.ts
 │       ├── users.service.ts   # Business logic cho user management
-│       ├── users.controller.ts # REST API endpoints
+│       ├── users.controller.ts # REST API endpoints (public API)
+│       ├── users-internal.controller.ts # Internal API endpoints (no auth)
 │       ├── dtos/
 │       │   └── user.dto.ts    # Data Transfer Objects
 │       └── schemas/
@@ -378,6 +379,17 @@ http://localhost:3003/api
 - **Headers**: `Authorization: Bearer <token>`
 - **Response** (200): Updated address object với `isDefault: true`
 
+#### 5. Internal API (Service-to-Service)
+
+Service cung cấp internal endpoints để các service khác có thể query user information mà không cần authentication:
+
+##### Lấy thông tin user theo ID (Internal)
+- **GET** `/users/internal/:id`
+- **Authentication**: Không cần (internal service call)
+- **Response** (200): User object (không bao gồm password)
+- **Use Case**: Các service khác (order-service, cart-service, etc.) có thể query user info
+- **Lưu ý**: Endpoint này nên được bảo vệ ở network level (chỉ cho phép internal services)
+
 ### Swagger Documentation
 
 API documentation có sẵn tại:
@@ -514,6 +526,7 @@ services/user-service/
         ├── users.module.ts
         ├── users.service.ts
         ├── users.controller.ts
+        ├── users-internal.controller.ts
         ├── dtos/
         │   └── user.dto.ts
         └── schemas/
@@ -574,8 +587,9 @@ User Service được thiết kế để hoạt động độc lập nhưng tíc
    - User được tạo qua auth-service, user-service quản lý thông tin và địa chỉ
 
 2. **Order Service**: 
-   - Order service có thể query user information từ user-service
+   - Order service có thể query user information từ user-service qua internal endpoint
    - Sử dụng địa chỉ từ user.addresses cho giao hàng
+   - Internal endpoint: `GET /api/users/internal/:id` (không cần auth)
 
 3. **Frontend**: 
    - Cung cấp API để frontend quản lý profile và địa chỉ
@@ -648,6 +662,11 @@ curl -X GET http://localhost:3003/api/users?role=customer \
   -H "Authorization: Bearer <admin-token>"
 ```
 
+**Get User by ID (Internal - no auth):**
+```bash
+curl -X GET http://localhost:3003/api/users/internal/60f1b5b5e1b3c1b5b5e1b3c1
+```
+
 ## 📝 Scripts
 
 - `npm run dev`: Chạy development mode với hot reload
@@ -712,12 +731,9 @@ curl -X GET http://localhost:3003/api/users?role=customer \
 - [ ] User notification preferences
 - [ ] User social media links
 - [ ] User tags/categories
+- [ ] Internal API authentication (API key hoặc service-to-service auth)
+- [ ] Rate limiting cho internal endpoints
 
-## 📞 Liên hệ & Hỗ trợ
-
-Để biết thêm thông tin về FurniMart project, vui lòng tham khảo documentation chính của dự án.
-
----
 
 **Version**: 1.0.0  
 **Last Updated**: 2024

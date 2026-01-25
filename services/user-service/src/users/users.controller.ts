@@ -53,9 +53,9 @@ export class UsersController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.BRANCH_MANAGER)
+  @Roles(Role.ADMIN, Role.BRANCH_MANAGER, Role.EMPLOYEE)
   @UseGuards(RolesGuard)
-  @ApiOperation({ summary: "Lấy danh sách người dùng (Admin/Manager)" })
+  @ApiOperation({ summary: "Lấy danh sách người dùng (Admin/Manager/Employee)" })
   async findAll(@CurrentUser() currentUser: any, @Query("role") role?: string) {
     if (currentUser?.role === Role.BRANCH_MANAGER) {
       if (!currentUser?.branchId) {
@@ -67,6 +67,21 @@ export class UsersController {
       }
       const users = await this.usersService.findAll({
         role: role || allowedRoles,
+        branchId: currentUser.branchId,
+      });
+      return users.map((u) => this.formatUserResponse(u));
+    }
+
+    if (currentUser?.role === Role.EMPLOYEE) {
+      if (!currentUser?.branchId) {
+        throw new ForbiddenException("Nhân viên phải được gán cho một chi nhánh");
+      }
+      // Employee chỉ được xem shippers của chi nhánh mình (để phân công)
+      if (role && role !== Role.SHIPPER) {
+        throw new ForbiddenException("Nhân viên chỉ được xem shipper của chi nhánh mình");
+      }
+      const users = await this.usersService.findAll({
+        role: Role.SHIPPER,
         branchId: currentUser.branchId,
       });
       return users.map((u) => this.formatUserResponse(u));
