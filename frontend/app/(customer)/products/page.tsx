@@ -101,15 +101,15 @@ export default function ProductsPage() {
               <div className="absolute inset-0 bg-white rounded-2xl shadow-lg border-2 border-secondary-200"></div>
               <div className="relative bg-white rounded-2xl p-2 flex items-center gap-2">
                 <div className="flex-1 relative">
-                  <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary-400 w-5 h-5" />
+                <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary-400 w-5 h-5" />
                   <input
                     type="text"
                     placeholder="Tìm kiếm sofa, bàn ăn, đèn trang trí..."
-                    value={search}
-                    onChange={(e) => {
-                      setSearch(e.target.value);
-                      setPage(1);
-                    }}
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setPage(1);
+                  }}
                     className="w-full pl-12 pr-4 py-4 text-secondary-900 placeholder-secondary-400 focus:outline-none rounded-xl bg-transparent"
                   />
                   {search && (
@@ -132,7 +132,7 @@ export default function ProductsPage() {
                   Tìm kiếm
                 </Button>
               </div>
-            </div>
+              </div>
 
             {/* Results Count & Active Filters */}
             <div className="flex flex-wrap items-center justify-between gap-4 mt-4">
@@ -151,7 +151,7 @@ export default function ProductsPage() {
                     <span className="inline-flex items-center gap-2 rounded-full bg-primary-100 px-3 py-1.5 text-sm font-semibold text-primary-700">
                       <FiFilter className="w-4 h-4" />
                       {activeFilterCount} bộ lọc
-                    </span>
+                  </span>
                     <button
                       onClick={clearAllFilters}
                       className="text-sm text-secondary-600 hover:text-primary-600 font-medium transition-colors"
@@ -173,19 +173,19 @@ export default function ProductsPage() {
           <div className="hidden lg:block lg:col-span-1">
             <div className="sticky top-6">
               <div className="rounded-2xl border-2 border-secondary-200 bg-white p-6 shadow-sm">
-                <FilterSidebar
-                  categories={categories}
-                  filters={filters}
-                  onFilterChange={(newFilters) => {
-                    setFilters({
-                      categoryId: newFilters.categoryId || "",
-                      minPrice: newFilters.minPrice,
-                      maxPrice: newFilters.maxPrice,
-                      rating: newFilters.rating,
-                    });
-                    setPage(1);
-                  }}
-                />
+              <FilterSidebar
+                categories={categories}
+                filters={filters}
+                onFilterChange={(newFilters) => {
+                  setFilters({
+                    categoryId: newFilters.categoryId || "",
+                    minPrice: newFilters.minPrice,
+                    maxPrice: newFilters.maxPrice,
+                    rating: newFilters.rating,
+                  });
+                  setPage(1);
+                }}
+              />
               </div>
             </div>
           </div>
