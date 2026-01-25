@@ -23,15 +23,22 @@ interface AppShellProtectedProps {
 }
 
 export default function AppShellProtected({ children, allowedRoles }: AppShellProtectedProps) {
-  const { isAuthenticated, role, user, accessToken } = useAuthStore();
+  const { isAuthenticated, role, user, accessToken, _hasHydrated } = useAuthStore();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const needsAuthRedirect = !isAuthenticated || !accessToken || !user;
+  
+  // Wait for hydration before checking auth
+  const needsAuthRedirect = _hasHydrated && (!isAuthenticated || !accessToken || !user);
   const needsRoleRedirect =
-    !needsAuthRedirect && !!allowedRoles && (!role || !allowedRoles.includes(role));
-  const isChecking = needsAuthRedirect || needsRoleRedirect;
+    _hasHydrated && !needsAuthRedirect && !!allowedRoles && (!role || !allowedRoles.includes(role));
+  const isChecking = !_hasHydrated || needsAuthRedirect || needsRoleRedirect;
 
   useEffect(() => {
+    // Don't check until hydrated
+    if (!_hasHydrated) {
+      return;
+    }
+
     // Check authentication
     if (needsAuthRedirect) {
       const returnUrl = encodeURIComponent(window.location.pathname);
@@ -44,7 +51,7 @@ export default function AppShellProtected({ children, allowedRoles }: AppShellPr
       router.push("/");
       return;
     }
-  }, [needsAuthRedirect, needsRoleRedirect, router]);
+  }, [_hasHydrated, needsAuthRedirect, needsRoleRedirect, router]);
 
   if (isChecking) {
     return (
