@@ -63,7 +63,7 @@ export default function ReviewsPage() {
           { label: "Đánh giá" },
         ]}
       />
-      <main className="space-y-6">
+      <main className="space-y-6 pb-12">
         {!reviews || reviews.length === 0 ? (
           <EmptyState
             icon={<FiStar className="w-16 h-16 text-secondary-300" />}
