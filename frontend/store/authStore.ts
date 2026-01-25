@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
 import { User, UserRole, AuthResponse } from "@/lib/types";
 
 interface AuthState {
@@ -9,6 +9,7 @@ interface AuthState {
   isAuthenticated: boolean;
   role: UserRole | null;
   branchId: string | null;
+  _hasHydrated?: boolean; // Flag to track when state has been restored from sessionStorage
   setAuth: (authData: AuthResponse) => void;
   setTokens: (accessToken: string, refreshToken: string) => void;
   setUser: (user: User) => void;
@@ -24,6 +25,7 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       role: null,
       branchId: null,
+      _hasHydrated: false, // Initialize as false, will be set to true after hydration
       setAuth: (authData: AuthResponse) => {
         set({
           user: authData.user,
@@ -33,15 +35,7 @@ export const useAuthStore = create<AuthState>()(
           role: authData.user.role,
           branchId: authData.user.branchId || null,
         });
-        // Set cookies for middleware
-        if (typeof document !== "undefined") {
-          document.cookie = `accessToken=${authData.accessToken}; path=/; max-age=3600; SameSite=Lax`;
-          document.cookie = `refreshToken=${authData.refreshToken}; path=/; max-age=604800; SameSite=Lax`;
-          document.cookie = `role=${authData.user.role}; path=/; max-age=3600; SameSite=Lax`;
-          if (authData.user.branchId) {
-            document.cookie = `branchId=${authData.user.branchId}; path=/; max-age=3600; SameSite=Lax`;
-          }
-        }
+        // No cookies - all auth state is in sessionStorage (tab-specific)
       },
       setTokens: (accessToken: string, refreshToken: string) => {
         set({
@@ -50,11 +44,7 @@ export const useAuthStore = create<AuthState>()(
           // Keep isAuthenticated true if we have tokens
           isAuthenticated: !!accessToken && !!refreshToken,
         });
-        // Update cookies for middleware
-        if (typeof document !== "undefined") {
-          document.cookie = `accessToken=${accessToken}; path=/; max-age=3600; SameSite=Lax`;
-          document.cookie = `refreshToken=${refreshToken}; path=/; max-age=604800; SameSite=Lax`;
-        }
+        // No cookies - all auth state is in sessionStorage (tab-specific)
       },
       setUser: (user: User) => {
         set({
@@ -72,20 +62,16 @@ export const useAuthStore = create<AuthState>()(
           role: null,
           branchId: null,
         });
-        // Clear cookies for middleware
-        if (typeof document !== "undefined") {
-          document.cookie = "accessToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-          document.cookie = "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-          document.cookie = "role=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-          document.cookie = "branchId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        }
+        // No cookies to clear - all auth state is in sessionStorage (tab-specific)
       },
     }),
     {
       name: "auth-storage",
+      // Use sessionStorage instead of localStorage to ensure each tab has its own session
+      storage: createJSONStorage(() => sessionStorage),
       // Custom merge function to ensure isAuthenticated is calculated correctly
       merge: (persistedState: unknown, currentState: AuthState) => {
-    const persisted = persistedState as Partial<AuthState>;
+        const persisted = persistedState as Partial<AuthState>;
         // If we have accessToken and user in persisted state, set isAuthenticated to true
         const mergedState = { ...currentState, ...persisted };
         if (persisted?.accessToken && persisted?.user) {
@@ -93,7 +79,29 @@ export const useAuthStore = create<AuthState>()(
         } else {
           mergedState.isAuthenticated = false;
         }
+        // Mark as hydrated after merge (even if no persisted state)
+        mergedState._hasHydrated = true;
         return mergedState;
+      },
+      // Skip hydration if no persisted state exists
+      skipHydration: false,
+      // Exclude _hasHydrated from persistence (it's a runtime flag)
+      partialize: (state: AuthState) => {
+        const { _hasHydrated, ...persistedState } = state;
+        return persistedState;
+      },
+      onRehydrateStorage: () => {
+        return (state: AuthState | undefined) => {
+          if (state) {
+            state._hasHydrated = true;
+            // Update isAuthenticated based on restored state
+            if (state.accessToken && state.user) {
+              state.isAuthenticated = true;
+            } else {
+              state.isAuthenticated = false;
+            }
+          }
+        };
       },
     }
   )
