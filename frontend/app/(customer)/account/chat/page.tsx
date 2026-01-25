@@ -11,7 +11,7 @@ import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
 import Badge from "@/components/ui/Badge";
 import { Chat, Message } from "@/lib/types";
-import { FiMessageSquare, FiSend, FiUser, FiPlus } from "react-icons/fi";
+import { FiMessageSquare, FiSend, FiUser, FiPlus, FiX, FiTrash2 } from "react-icons/fi";
 import { toast } from "react-toastify";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -24,6 +24,7 @@ export default function CustomerChatPage() {
   const [newChatSubject, setNewChatSubject] = useState("");
   const [showNewChat, setShowNewChat] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const { data: myChats, isLoading: chatsLoading, refetch: refetchChats } = useQuery({
     queryKey: ["customer", "chats"],
@@ -64,8 +65,14 @@ export default function CustomerChatPage() {
       queryClient.invalidateQueries({ queryKey: ["chat", selectedChatId] });
       queryClient.invalidateQueries({ queryKey: ["customer", "chats"] });
       setMessage("");
+      // Scroll to bottom of messages container only, not the whole page
       setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        if (messagesContainerRef.current && messagesEndRef.current) {
+          messagesContainerRef.current.scrollTo({
+            top: messagesContainerRef.current.scrollHeight,
+            behavior: "smooth",
+          });
+        }
       }, 100);
     },
     onError: (error: any) => {
@@ -86,7 +93,13 @@ export default function CustomerChatPage() {
   }, [selectedChatId, refetchChat]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    // Scroll to bottom of messages container only when messages change
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
   }, [selectedChat?.messages]);
 
   const handleSendMessage = (e: React.FormEvent) => {
@@ -107,6 +120,46 @@ export default function CustomerChatPage() {
     createChatMutation.mutate(newChatSubject || undefined);
   };
 
+  const closeChatMutation = useMutation({
+    mutationFn: (chatId: string) => chatService.updateStatus(chatId, "closed"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["chat", selectedChatId] });
+      queryClient.invalidateQueries({ queryKey: ["customer", "chats"] });
+      toast.success("Đã đóng chat");
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.message || error?.message || "Không thể đóng chat";
+      toast.error(errorMessage);
+    },
+  });
+
+  const deleteChatMutation = useMutation({
+    mutationFn: (chatId: string) => chatService.deleteChat(chatId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["customer", "chats"] });
+      setSelectedChatId(null);
+      toast.success("Đã xóa chat");
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.message || error?.message || "Không thể xóa chat";
+      toast.error(errorMessage);
+    },
+  });
+
+  const handleCloseChat = () => {
+    if (!selectedChatId) return;
+    if (confirm("Bạn có chắc muốn đóng chat này?")) {
+      closeChatMutation.mutate(selectedChatId);
+    }
+  };
+
+  const handleDeleteChat = () => {
+    if (!selectedChatId) return;
+    if (confirm("Bạn có chắc muốn xóa chat này? Hành động này không thể hoàn tác.")) {
+      deleteChatMutation.mutate(selectedChatId);
+    }
+  };
+
   const messages = (selectedChat as Chat & { messages?: Message[] })?.messages || [];
 
   return (
@@ -118,29 +171,30 @@ export default function CustomerChatPage() {
           { label: "Chat" },
         ]}
       />
-      <main className="space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-250px)]">
+      <main className="space-y-6 pb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-280px)] min-h-[600px]">
           {/* Chat List */}
-          <Card className="overflow-hidden">
+          <Card className="overflow-hidden shadow-sm">
             <CardContent className="p-0 h-full flex flex-col">
-              <div className="p-4 border-b border-secondary-200 flex items-center justify-between">
-                <h3 className="font-semibold">Cuộc trò chuyện</h3>
+              <div className="p-4 border-b border-secondary-200 bg-secondary-50 flex items-center justify-between">
+                <h3 className="font-semibold text-secondary-900">Cuộc trò chuyện</h3>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setShowNewChat(!showNewChat)}
+                  className="hover:bg-primary-50 hover:border-primary-300"
                 >
                   <FiPlus className="w-4 h-4" />
                 </Button>
               </div>
               {showNewChat && (
-                <form onSubmit={handleCreateChat} className="p-4 border-b border-secondary-200">
+                <form onSubmit={handleCreateChat} className="p-4 border-b border-secondary-200 bg-white">
                   <input
                     type="text"
                     value={newChatSubject}
                     onChange={(e) => setNewChatSubject(e.target.value)}
                     placeholder="Chủ đề (tùy chọn)"
-                    className="w-full px-3 py-2 border border-secondary-300 rounded-lg mb-2"
+                    className="w-full px-3 py-2 border border-secondary-300 rounded-lg mb-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
                   <Button
                     type="submit"
@@ -168,8 +222,8 @@ export default function CustomerChatPage() {
                       <button
                         key={chat.id}
                         onClick={() => setSelectedChatId(chat.id)}
-                        className={`w-full p-4 text-left hover:bg-secondary-50 transition-colors ${
-                          selectedChatId === chat.id ? "bg-primary-50" : ""
+                        className={`w-full p-4 text-left hover:bg-secondary-50 transition-all duration-200 ${
+                          selectedChatId === chat.id ? "bg-primary-50 border-l-4 border-primary-600" : "border-l-4 border-transparent"
                         }`}
                       >
                         <div className="flex items-start justify-between">
@@ -200,39 +254,71 @@ export default function CustomerChatPage() {
           </Card>
 
           {/* Chat Messages */}
-          <Card className="lg:col-span-2 overflow-hidden">
+          <Card className="lg:col-span-2 overflow-hidden shadow-sm">
             <CardContent className="p-0 h-full flex flex-col">
               {selectedChatId && selectedChat ? (
                 <>
                   {/* Chat Header */}
-                  <div className="p-4 border-b border-secondary-200 bg-secondary-50">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
-                        <FiUser className="w-5 h-5 text-primary-600" />
+                  <div className="p-4 border-b border-secondary-200 bg-gradient-to-r from-primary-50 to-secondary-50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
+                          <FiUser className="w-5 h-5 text-primary-600" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-secondary-900">
+                            {(selectedChat as Chat).subject || "Hỗ trợ khách hàng"}
+                          </p>
+                          <p className="text-xs text-secondary-500">
+                            {(selectedChat as Chat).status === "open" ? "Đang mở" : "Đã đóng"}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-semibold text-secondary-900">
-                          {(selectedChat as Chat).subject || "Hỗ trợ khách hàng"}
-                        </p>
-                        <p className="text-xs text-secondary-500">
-                          {(selectedChat as Chat).status === "open" ? "Đang mở" : "Đã đóng"}
-                        </p>
+                      <div className="flex gap-2">
+                        {(selectedChat as Chat).status === "open" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleCloseChat}
+                            isLoading={closeChatMutation.isPending}
+                          >
+                            <FiX className="w-4 h-4 mr-1" />
+                            Đóng chat
+                          </Button>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleDeleteChat}
+                          isLoading={deleteChatMutation.isPending}
+                          className="text-red-600 hover:text-red-700 hover:border-red-300"
+                        >
+                          <FiTrash2 className="w-4 h-4 mr-1" />
+                          Xóa
+                        </Button>
                       </div>
                     </div>
                   </div>
 
                   {/* Messages */}
-                  <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                  <div 
+                    ref={messagesContainerRef}
+                    className="flex-1 overflow-y-auto p-4 space-y-4"
+                  >
                     {messages.length === 0 ? (
                       <div className="text-center text-secondary-500 py-8">
                         Chưa có tin nhắn nào
                       </div>
                     ) : (
-                      messages.map((msg: Message) => {
+                      messages.map((msg: Message | any) => {
                         const isCustomer = msg.senderRole === "customer" || msg.senderId === user?.id;
+                        // Backend uses 'message' field, frontend may use 'content'
+                        const messageContent = msg.message || msg.content || "";
+                        // Backend uses 'sentAt', frontend may use 'createdAt'
+                        const messageDate = msg.sentAt || msg.createdAt || new Date().toISOString();
                         return (
                           <div
-                            key={msg.id}
+                            key={msg.id || msg._id || Math.random()}
                             className={`flex ${isCustomer ? "justify-end" : "justify-start"}`}
                           >
                             <div
@@ -242,15 +328,15 @@ export default function CustomerChatPage() {
                                   : "bg-secondary-100 text-secondary-900"
                               }`}
                             >
-                              <p className="text-sm">{msg.content}</p>
+                              <p className="text-sm">{messageContent}</p>
                               <p
                                 className={`text-xs mt-1 ${
                                   isCustomer ? "text-primary-100" : "text-secondary-500"
                                 }`}
                               >
-                                {formatDistanceToNow(new Date(msg.createdAt), {
-                                  addSuffix: true,
-                                  locale: vi,
+                                {new Date(messageDate).toLocaleTimeString("vi-VN", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
                                 })}
                               </p>
                             </div>
@@ -265,7 +351,7 @@ export default function CustomerChatPage() {
                   {(selectedChat as Chat).status === "open" && (
                     <form
                       onSubmit={handleSendMessage}
-                      className="p-4 border-t border-secondary-200 bg-secondary-50"
+                      className="p-4 border-t border-secondary-200 bg-white"
                     >
                       <div className="flex gap-2">
                         <input
@@ -273,12 +359,13 @@ export default function CustomerChatPage() {
                           value={message}
                           onChange={(e) => setMessage(e.target.value)}
                           placeholder="Nhập tin nhắn..."
-                          className="flex-1 px-4 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          className="flex-1 px-4 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
                         />
                         <Button
                           type="submit"
                           variant="primary"
                           isLoading={sendMessageMutation.isPending}
+                          className="px-6"
                         >
                           <FiSend className="w-4 h-4" />
                         </Button>
