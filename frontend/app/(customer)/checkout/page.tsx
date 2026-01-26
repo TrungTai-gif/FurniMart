@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "react-toastify";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { FiMapPin, FiTruck, FiCreditCard, FiCheckCircle, FiTag, FiX } from "react-icons/fi";
 
 import Section from "@/components/ui/Section";
@@ -74,28 +74,9 @@ const StepIndicator = ({ num, title, active }: StepIndicatorProps) => (
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const { items, totalAmount, totalItems, clearCart } = useCartStore();
-  const { user, isAuthenticated, accessToken, role, _hasHydrated } = useAuthStore();
+  const { user } = useAuthStore();
   const [hasCheckedCart, setHasCheckedCart] = useState(false);
-
-  // Check authentication - redirect to login if not authenticated
-  // Wait for hydration before checking
-  useEffect(() => {
-    if (!_hasHydrated) {
-      return; // Wait for state to be restored
-    }
-    
-    if (!isAuthenticated || !accessToken || !user) {
-      router.push("/auth/login?redirect=/checkout");
-      return;
-    }
-    // Only allow customer role
-    if (role && role !== "customer") {
-      router.push("/");
-      return;
-    }
-  }, [_hasHydrated, isAuthenticated, accessToken, user, role, router]);
 
   // Redirect if cart is empty - only check once on mount, after checking localStorage and store
   useEffect(() => {
@@ -137,19 +118,6 @@ export default function CheckoutPage() {
     }, 2000); // Wait 2 seconds to allow cart to load from backend
     return () => clearTimeout(timer);
   }, [hasCheckedCart, items.length, router]);
-
-  // Don't render if not hydrated or not authenticated
-  if (!_hasHydrated) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated || !accessToken || !user || role !== "customer") {
-    return null;
-  }
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [deliveryMethod, setDeliveryMethod] = useState<"shipping" | "pickup">(
@@ -213,12 +181,6 @@ export default function CheckoutPage() {
     mutationFn: orderService.createOrder,
     onSuccess: async (data) => {
       clearCart();
-
-      // Invalidate promotion queries to refresh usage count
-      if (appliedPromotionId) {
-        queryClient.invalidateQueries({ queryKey: ["promotions"] });
-        queryClient.invalidateQueries({ queryKey: ["admin", "promotions"] });
-      }
 
       if (paymentMethod === "VNPAY") {
         const orderId = data.id || data._id;
@@ -321,7 +283,6 @@ export default function CheckoutPage() {
       notes: data.note,
       promotionId: appliedPromotionId,
       promotionCode: appliedPromotionId ? promoCode : undefined,
-      discount: appliedDiscount > 0 ? appliedDiscount : undefined, // Send discount amount
     });
   };
 

@@ -631,6 +631,12 @@ Có thể mở rộng để hỗ trợ multi-tenant bằng cách thêm `tenantId
 - [ ] Bulk update multiple settings keys
 - [ ] Settings history/change tracking
 
+## 📞 Liên hệ & Hỗ trợ
+
+Để biết thêm thông tin về FurniMart project, vui lòng tham khảo documentation chính của dự án.
+
+---
+
 **Version**: 1.0.0  
 **Last Updated**: 2024
 

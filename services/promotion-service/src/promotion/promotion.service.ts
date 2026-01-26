@@ -163,13 +163,64 @@ export class PromotionService {
   }
 
   async usePromotion(promotionId: string, userId: string): Promise<void> {
+    if (!userId || userId.trim() === '') {
+      throw new BadRequestException('User ID is required to use promotion');
+    }
+
     const promotion = await this.findById(promotionId);
     
-    if (!promotion.usedBy.includes(userId)) {
-      await this.promotionModel.findByIdAndUpdate(promotionId, {
-        $push: { usedBy: userId },
-        $inc: { usageCount: 1 },
-      }).exec();
+    if (!promotion) {
+      throw new NotFoundException(`Promotion with ID ${promotionId} not found`);
+    }
+    
+    // Check if promotion is still valid
+    const now = new Date();
+    if (!promotion.isActive) {
+      throw new BadRequestException('Promotion is not active');
+    }
+
+    if (promotion.startDate > now || promotion.endDate < now) {
+      throw new BadRequestException('Promotion is not valid at this time');
+    }
+
+    // Check usage limit
+    if (promotion.usageLimit && promotion.usageCount >= promotion.usageLimit) {
+      throw new BadRequestException(`Promotion usage limit reached (${promotion.usageCount}/${promotion.usageLimit})`);
+    }
+    
+    // Only update if user hasn't used this promotion yet
+    // Convert both to string for comparison (handle ObjectId and string)
+    const userIdStr = String(userId);
+    const hasUsed = promotion.usedBy.some((id: any) => String(id) === userIdStr);
+    
+    if (!hasUsed) {
+      const updateResult = await this.promotionModel.findByIdAndUpdate(
+        promotionId,
+        {
+          $push: { usedBy: userIdStr },
+          $inc: { usageCount: 1 },
+        },
+        { new: true } // Return updated document
+      ).exec();
+      
+      if (!updateResult) {
+        throw new BadRequestException('Failed to update promotion usage count');
+      }
+      
+      // Verify the update was successful
+      const updatedPromotion = await this.findById(promotionId);
+      if (updatedPromotion.usageCount === promotion.usageCount) {
+        console.error(`❌ Promotion usage count was not updated (still ${promotion.usageCount})`);
+        throw new BadRequestException(`Promotion usage count was not updated (still ${promotion.usageCount})`);
+      }
+      
+      // Log success
+      console.log(`✅ Promotion ${promotionId} usage updated: ${promotion.usageCount} -> ${updatedPromotion.usageCount} for user ${userIdStr}`);
+      console.log(`📊 Promotion details: usageLimit=${promotion.usageLimit}, usedBy count=${updatedPromotion.usedBy.length}`);
+    } else {
+      // User has already used this promotion
+      console.warn(`⚠️ User ${userIdStr} has already used promotion ${promotionId}`);
+      throw new BadRequestException('User has already used this promotion');
     }
   }
 

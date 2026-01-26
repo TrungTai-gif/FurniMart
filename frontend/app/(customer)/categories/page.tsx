@@ -23,15 +23,15 @@ export default function CategoriesPage() {
       {/* Hero Section */}
       <div className="bg-gradient-to-br from-primary-50 via-white to-secondary-50 border-b border-secondary-200">
         <PageShell className="pt-8 md:pt-12 pb-12">
-      <PageHeader
-        title="Danh mục sản phẩm"
+          <PageHeader
+            title="Danh mục sản phẩm"
             description="Khám phá bộ sưu tập nội thất được phân loại theo không gian và phong cách. Dễ dàng tìm kiếm sản phẩm hoàn hảo cho ngôi nhà của bạn."
-        breadcrumbs={[
+            breadcrumbs={[
               { label: "Trang chủ", href: routes.home },
-          { label: "Danh mục" },
-        ]}
+              { label: "Danh mục" },
+            ]}
             className="mb-8"
-      />
+          />
           
           {/* Stats */}
           <div className="max-w-4xl mx-auto">
@@ -74,7 +74,7 @@ export default function CategoriesPage() {
             </div>
           </div>
         </PageShell>
-          </div>
+      </div>
 
       {/* Main Content */}
       <PageShell className="py-12">
@@ -84,7 +84,7 @@ export default function CategoriesPage() {
               <div key={i} className="space-y-4">
                 <Skeleton className="aspect-square rounded-2xl" />
                 <Skeleton className="h-6 w-3/4" />
-                  <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-full" />
               </div>
             ))}
           </div>
@@ -132,9 +132,9 @@ export default function CategoriesPage() {
                       <div className="absolute top-4 left-4">
                         <span className="inline-flex items-center gap-1.5 rounded-full bg-white/95 backdrop-blur-sm px-3 py-1.5 text-xs font-bold text-secondary-900 shadow-lg border border-white/50">
                           <FiGrid className="w-3 h-3" />
-                        Bộ sưu tập
-                      </span>
-                    </div>
+                          Bộ sưu tập
+                        </span>
+                      </div>
                       
                       {/* View CTA on hover */}
                       <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
@@ -148,13 +148,13 @@ export default function CategoriesPage() {
                     {/* Content */}
                     <div className="p-6 flex-1 flex flex-col bg-white">
                       <h3 className="text-xl font-bold text-secondary-900 group-hover:text-primary-700 transition-colors mb-2">
-                            {category.name}
-                          </h3>
-                          {category.description && (
+                        {category.name}
+                      </h3>
+                      {category.description && (
                         <p className="text-sm text-secondary-600 line-clamp-2 mb-4">
-                              {category.description}
-                            </p>
-                          )}
+                          {category.description}
+                        </p>
+                      )}
                       
                       <div className="mt-auto pt-4 border-t border-secondary-100">
                         <div className="flex items-center justify-between text-xs">
@@ -166,8 +166,8 @@ export default function CategoriesPage() {
                           </span>
                         </div>
                       </div>
-                        </div>
-                      </div>
+                    </div>
+                  </div>
                 </Link>
               );
             })}
@@ -183,9 +183,9 @@ export default function CategoriesPage() {
             <p className="text-secondary-600">
               Hệ thống đang cập nhật danh mục mới
             </p>
-              </div>
+          </div>
         )}
-    </PageShell>
+      </PageShell>
     </div>
   );
 }
