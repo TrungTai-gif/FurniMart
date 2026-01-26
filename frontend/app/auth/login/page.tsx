@@ -42,11 +42,8 @@ function LoginForm() {
       const response = await authService.login(data.email, data.password);
       setAuth(response);
 
-      if (typeof document !== "undefined") {
-        document.cookie = `accessToken=${response.accessToken}; path=/; max-age=3600`;
-        document.cookie = `refreshToken=${response.refreshToken}; path=/; max-age=604800`;
-        document.cookie = `role=${response.user.role}; path=/; max-age=3600`;
-      }
+      // Don't set cookies - everything is stored in sessionStorage (tab-specific)
+      // This ensures each tab has its own independent session
 
       notifications.login.success(
         response.user.name || response.user.fullName || "bạn",

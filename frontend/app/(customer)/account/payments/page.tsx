@@ -98,7 +98,7 @@ export default function PaymentsPage() {
           { label: "Thanh toán" },
         ]}
       />
-      <main className="space-y-6">
+      <main className="space-y-6 pb-12">
         {!payments || payments.length === 0 ? (
           <EmptyState
             icon={<FiCreditCard className="w-16 h-16 text-secondary-300" />}

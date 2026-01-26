@@ -28,7 +28,7 @@ import {
 import { routes } from "@/lib/config/routes";
 
 export default function AccountPage() {
-  const { user, setUser } = useAuthStore();
+  const { user, setUser, isAuthenticated, accessToken, role, _hasHydrated } = useAuthStore();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
@@ -53,11 +53,22 @@ export default function AccountPage() {
     },
   });
 
+  // Wait for hydration before checking auth
   useEffect(() => {
-    if (!user) {
-      router.push("/auth/login");
+    if (!_hasHydrated) {
+      return; // Wait for state to be restored
     }
-  }, [user, router]);
+    
+    if (!isAuthenticated || !accessToken || !user) {
+      router.push("/auth/login?redirect=/account");
+      return;
+    }
+    // Only allow customer role
+    if (role && role !== "customer") {
+      router.push("/");
+      return;
+    }
+  }, [_hasHydrated, isAuthenticated, accessToken, user, role, router]);
 
   useEffect(() => {
     if (user) {
@@ -68,7 +79,16 @@ export default function AccountPage() {
     }
   }, [user]);
 
-  if (!user) {
+  // Don't render if not hydrated or not authenticated
+  if (!_hasHydrated) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !accessToken || !user || role !== "customer") {
     return null;
   }
 
@@ -127,13 +147,13 @@ export default function AccountPage() {
       {/* Hero Section */}
       <div className="bg-gradient-to-br from-primary-50 via-white to-secondary-50 border-b border-secondary-200">
         <PageShell className="pt-8 md:pt-12 pb-12">
-          <PageHeader
-            title="Tài khoản"
+      <PageHeader
+        title="Tài khoản"
             description="Quản lý thông tin cá nhân, địa chỉ giao hàng và các tiện ích khác"
-            breadcrumbs={[
-              { label: "Trang chủ", href: routes.home },
-              { label: "Tài khoản" },
-            ]}
+        breadcrumbs={[
+          { label: "Trang chủ", href: routes.home },
+          { label: "Tài khoản" },
+        ]}
             className="mb-8"
           />
           
@@ -152,44 +172,44 @@ export default function AccountPage() {
                 <div className="flex-1">
                   <p className="text-sm text-white/80 mb-1 font-medium">Trung tâm tài khoản</p>
                   <h2 className="text-3xl font-bold mb-2">
-                    Xin chào, {user.fullName || user.name}
-                  </h2>
+              Xin chào, {user.fullName || user.name}
+            </h2>
                   <div className="flex flex-wrap items-center gap-4 text-sm">
                     <div className="flex items-center gap-2">
                       <FiMail className="w-4 h-4 text-white/80" />
                       <span className="text-white/90">{user.email}</span>
-                    </div>
+          </div>
                     {user.phone && (
                       <div className="flex items-center gap-2">
                         <FiPhone className="w-4 h-4 text-white/80" />
                         <span className="text-white/90">{user.phone}</span>
-                      </div>
+                </div>
                     )}
                     <div className="flex items-center gap-2">
                       <FiUser className="w-4 h-4 text-white/80" />
                       <span className="text-white/90 capitalize">{user.role}</span>
                     </div>
-                  </div>
                 </div>
-                <Button
-                  variant="outline"
-                  className="bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30"
-                  onClick={() => {
-                    if (isEditing) {
-                      setIsEditing(false);
-                      setFormData({
-                        fullName: user?.fullName || user?.name || "",
-                        phone: user?.phone || "",
-                      });
-                    } else {
-                      setIsEditing(true);
-                    }
-                  }}
-                >
-                  <FiEdit className="w-4 h-4 mr-2" />
-                  {isEditing ? "Hủy chỉnh sửa" : "Chỉnh sửa"}
-                </Button>
               </div>
+              <Button
+                variant="outline"
+                  className="bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30"
+                onClick={() => {
+                  if (isEditing) {
+                    setIsEditing(false);
+                    setFormData({
+                      fullName: user?.fullName || user?.name || "",
+                      phone: user?.phone || "",
+                    });
+                  } else {
+                    setIsEditing(true);
+                  }
+                }}
+              >
+                <FiEdit className="w-4 h-4 mr-2" />
+                  {isEditing ? "Hủy chỉnh sửa" : "Chỉnh sửa"}
+              </Button>
+            </div>
             </div>
           </div>
         </PageShell>
@@ -215,52 +235,52 @@ export default function AccountPage() {
                     <label className="block text-sm font-semibold text-secondary-700 mb-2">
                       Họ và tên
                     </label>
-                    <Input
-                      value={formData.fullName}
-                      onChange={(e) =>
-                        setFormData({ ...formData, fullName: e.target.value })
-                      }
-                      required
+                  <Input
+                    value={formData.fullName}
+                    onChange={(e) =>
+                      setFormData({ ...formData, fullName: e.target.value })
+                    }
+                    required
                       className="w-full"
-                    />
+                  />
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-secondary-700 mb-2">
                       Số điện thoại
                     </label>
-                    <Input
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) =>
-                        setFormData({ ...formData, phone: e.target.value })
-                      }
+                  <Input
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) =>
+                      setFormData({ ...formData, phone: e.target.value })
+                    }
                       className="w-full"
-                    />
+                  />
                   </div>
                   <div className="pt-4 border-t border-secondary-100">
                     <div className="flex gap-3">
-                      <Button
-                        type="submit"
-                        variant="primary"
-                        isLoading={updateProfileMutation.isPending}
-                        className="flex-1"
-                      >
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      isLoading={updateProfileMutation.isPending}
+                      className="flex-1"
+                    >
                         Lưu thay đổi
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => {
-                          setIsEditing(false);
-                          setFormData({
-                            fullName: user?.fullName || user?.name || "",
-                            phone: user?.phone || "",
-                          });
-                        }}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setIsEditing(false);
+                        setFormData({
+                          fullName: user?.fullName || user?.name || "",
+                          phone: user?.phone || "",
+                        });
+                      }}
                         className="flex-1"
-                      >
-                        Hủy
-                      </Button>
+                    >
+                      Hủy
+                    </Button>
                     </div>
                   </div>
                 </form>
@@ -348,14 +368,14 @@ export default function AccountPage() {
                           </div>
                         </div>
                       </div>
-                    </Link>
+                      </Link>
                   );
                 })}
               </div>
             </CardContent>
           </div>
         </div>
-      </PageShell>
+    </PageShell>
     </div>
   );
 }

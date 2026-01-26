@@ -101,7 +101,7 @@ export default function DisputesPage() {
           </Button>
         }
       />
-      <main className="space-y-6">
+      <main className="space-y-6 pb-12">
         {isLoading ? (
           <div className="space-y-4">
             {[...Array(3)].map((_, i) => (
