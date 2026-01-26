@@ -67,5 +67,9 @@ export const chatService = {
   markAsRead: async (chatId: string): Promise<void> => {
     await apiClient.put(endpoints.chat.markAsRead(chatId));
   },
+
+  deleteChat: async (chatId: string): Promise<void> => {
+    await apiClient.delete(endpoints.chat.delete(chatId));
+  },
 };
 
