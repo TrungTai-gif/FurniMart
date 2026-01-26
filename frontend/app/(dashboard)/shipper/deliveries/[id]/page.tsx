@@ -52,16 +52,16 @@ export default function DeliveryDetailPage() {
 
   const uploadProofMutation = useMutation({
     mutationFn: async (file: File) => {
-      const formData = new FormData();
-      formData.append("image", file);
-      const response = await uploadService.uploadImage(formData);
+      // uploadService.uploadImage expects File or FormData with field name "file"
+      // Pass File directly, uploadService will handle FormData creation
+      const response = await uploadService.uploadImage(file);
       return response.url;
     },
     onSuccess: (imageUrl) => {
       // Update order with proof image
       updateStatusMutation.mutate({
         status: order?.status || "DELIVERED",
-        notes: `Proof uploaded: ${imageUrl}`,
+        deliveryProof: imageUrl,
       });
     },
     onError: () => {
