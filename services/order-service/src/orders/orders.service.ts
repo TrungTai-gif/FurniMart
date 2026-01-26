@@ -15,6 +15,7 @@ export class OrdersService {
   private readonly WAREHOUSE_SERVICE_URL = process.env.WAREHOUSE_SERVICE_URL || 'http://warehouse-service:3009';
   private readonly USER_SERVICE_URL = process.env.USER_SERVICE_URL || 'http://user-service:3003';
   private readonly PRODUCT_SERVICE_URL = process.env.PRODUCT_SERVICE_URL || 'http://product-service:3004';
+  private readonly PROMOTION_SERVICE_URL = process.env.PROMOTION_SERVICE_URL || 'http://promotion-service:3010';
   private readonly ROUTING_SERVICE_URL = process.env.ROUTING_SERVICE_URL || 'https://router.project-osrm.org/route/v1/driving';
 
   constructor(
@@ -25,6 +26,9 @@ export class OrdersService {
   ) {}
 
   async create(customerId: string, createOrderDto: CreateOrderDto): Promise<OrderDocument> {
+    this.logger.log(`📦 Creating order for customer: ${customerId}`);
+    this.logger.log(`🎁 Promotion info: promotionId=${createOrderDto.promotionId}, promotionCode=${createOrderDto.promotionCode}, discount=${createOrderDto.discount}`);
+    
     if (!createOrderDto.items || createOrderDto.items.length === 0) {
       throw new BadRequestException('Giỏ hàng không được để trống');
     }
@@ -89,9 +93,42 @@ export class OrdersService {
 
     // Apply promotion discount if provided
     let finalTotalPrice = totalPrice;
-    if (createOrderDto.discount && createOrderDto.discount > 0) {
-      totalDiscount += createOrderDto.discount;
-      finalTotalPrice = totalPrice - createOrderDto.discount;
+    let promotionDiscount = 0;
+    
+    // If promotionId is provided but discount is not, calculate discount from promotion
+    if (createOrderDto.promotionId && (!createOrderDto.discount || createOrderDto.discount === 0)) {
+      try {
+        const promotionUrl = `${this.PROMOTION_SERVICE_URL}/api/promotions/${createOrderDto.promotionId}`;
+        const promotionResponse = await firstValueFrom(this.httpService.get(promotionUrl));
+        const promotion = promotionResponse.data?.data || promotionResponse.data;
+        
+        if (promotion) {
+          // Calculate discount based on promotion type
+          if (promotion.type === 'percentage') {
+            promotionDiscount = (totalPrice * promotion.value) / 100;
+            if (promotion.maxDiscountAmount) {
+              promotionDiscount = Math.min(promotionDiscount, promotion.maxDiscountAmount);
+            }
+          } else if (promotion.type === 'fixed') {
+            promotionDiscount = promotion.value;
+          }
+          // free_shipping type has discount = 0
+        }
+      } catch (error) {
+        this.logger.warn(`Could not fetch promotion ${createOrderDto.promotionId} to calculate discount:`, error);
+        // Continue with provided discount or 0
+      }
+    }
+    
+    // Use provided discount or calculated promotion discount
+    const appliedDiscount = createOrderDto.discount && createOrderDto.discount > 0 
+      ? createOrderDto.discount 
+      : promotionDiscount;
+    
+    if (appliedDiscount > 0) {
+      totalDiscount += appliedDiscount;
+      finalTotalPrice = totalPrice - appliedDiscount;
+      this.logger.log(`Applied promotion discount: ${appliedDiscount} to order total: ${totalPrice} -> ${finalTotalPrice}`);
     }
 
     const rawPaymentMethod = createOrderDto.paymentMethod || 'cod';
@@ -316,6 +353,57 @@ export class OrdersService {
       });
     } catch (error) {
       this.logger.warn('Failed to create audit log for order creation', error);
+    }
+
+    // Update promotion usage count when order is created successfully
+    this.logger.log(`🔍 Checking promotion update: promotionId=${createOrderDto.promotionId}, customerId=${customerId}, promotionCode=${createOrderDto.promotionCode}`);
+    
+    if (createOrderDto.promotionId && customerId) {
+      try {
+        const promotionUrl = `${this.PROMOTION_SERVICE_URL}/api/promotions/internal/${createOrderDto.promotionId}/use`;
+        this.logger.log(`📞 Attempting to update promotion usage: ${promotionUrl} with userId: ${customerId}`);
+        
+        const requestBody = { userId: customerId };
+        this.logger.log(`📤 Request body: ${JSON.stringify(requestBody)}`);
+        
+        const response = await firstValueFrom(
+          this.httpService.post(promotionUrl, requestBody, {
+            timeout: 10000, // Increase timeout to 10 seconds
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          })
+        );
+        
+        this.logger.log(`✅ Promotion ${createOrderDto.promotionId} usage count updated for order ${order._id.toString()}`);
+        this.logger.log(`📥 Response: ${JSON.stringify(response.data)}`);
+      } catch (error: any) {
+        this.logger.error(`❌ Failed to update promotion usage for order ${order._id.toString()}:`);
+        this.logger.error(`Promotion ID: ${createOrderDto.promotionId}, User ID: ${customerId}`);
+        this.logger.error(`Promotion Code: ${createOrderDto.promotionCode}`);
+        
+        if (error?.response) {
+          this.logger.error(`Response status: ${error.response.status}`);
+          this.logger.error(`Response headers: ${JSON.stringify(error.response.headers)}`);
+          this.logger.error(`Response data: ${JSON.stringify(error.response.data)}`);
+        } else if (error?.request) {
+          this.logger.error(`Request made but no response received`);
+          this.logger.error(`Request config: ${JSON.stringify(error.config)}`);
+        } else if (error?.message) {
+          this.logger.error(`Error message: ${error.message}`);
+        } else {
+          this.logger.error(`Error: ${JSON.stringify(error)}`);
+        }
+        // Don't fail order creation if promotion update fails, but log the error
+      }
+    } else {
+      if (createOrderDto.promotionId && !customerId) {
+        this.logger.warn(`⚠️ Promotion ID provided (${createOrderDto.promotionId}) but customerId is missing, skipping usage update`);
+      } else if (!createOrderDto.promotionId && customerId) {
+        this.logger.log(`ℹ️ No promotion ID provided, skipping usage update`);
+      } else {
+        this.logger.log(`ℹ️ No promotion ID and no customerId, skipping usage update`);
+      }
     }
 
     // Populate order before returning
@@ -555,14 +643,21 @@ export class OrdersService {
     
     const query: any = {
       branchId: shipperBranchId,
-      status: { $in: ['CONFIRMED', 'PACKING', 'READY_TO_SHIP', 'SHIPPING', 'DELIVERED', 'FAILED_DELIVERY', 'OUT_FOR_DELIVERY', 'DELIVERY_FAILED'] },
+      status: { $in: ['CONFIRMED', 'PACKING', 'READY_TO_SHIP', 'SHIPPING', 'DELIVERED', 'FAILED_DELIVERY'] },
     };
     
-    // Shipper thấy tất cả đơn hàng của branch, nhưng ưu tiên các đơn đã được gán cho mình
-    // Hoặc các đơn chưa được gán shipper nào (để có thể assign)
+    // Shipper chỉ thấy đơn hàng đã được gán cho mình
+    // Hoặc các đơn chưa được gán shipper nào (để có thể tự nhận)
     if (shipperId) {
+      // Use $or to include orders assigned to this shipper OR unassigned orders
       query.$or = [
-        { shipperId: shipperId },
+        { shipperId: shipperId }, // Orders assigned to this shipper
+        { shipperId: { $exists: false } }, // Orders without shipperId field
+        { shipperId: null }, // Orders with null shipperId
+      ];
+    } else {
+      // If no shipperId provided, only show unassigned orders
+      query.$or = [
         { shipperId: { $exists: false } },
         { shipperId: null },
       ];
