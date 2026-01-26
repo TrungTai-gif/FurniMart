@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards, Req, BadRequestException } from '@nestjs/common';
 import { Role } from '@shared/config/rbac-matrix';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
@@ -8,6 +8,7 @@ import { CreatePromotionDto, UpdatePromotionDto, ApplyPromotionDto } from './dto
 import { CurrentUser } from '@shared/common/decorators/user.decorator';
 import { Roles } from '@shared/common/decorators/roles.decorator';
 import { RolesGuard } from '@shared/common/guards/roles.guard';
+import { Public } from '@shared/common/decorators/roles.decorator';
 
 @ApiTags('Promotions')
 @Controller('promotions')
@@ -75,11 +76,30 @@ export class PromotionController {
     // Extract userId from request.user if authenticated, otherwise use empty string
     const userId = (req as any).user?.userId || '';
     const result = await this.promotionService.applyPromotion(userId, applyDto);
-    // Mark promotion as used only if user is authenticated
-    if (result.promotionId && userId) {
-      await this.promotionService.usePromotion(result.promotionId, userId);
-    }
+    // Don't mark as used here - will be marked when order is created successfully
+    // This prevents reducing quantity if user applies but doesn't complete order
     return result;
+  }
+
+  @Post('internal/:id/use')
+  @Public()
+  @ApiOperation({ summary: 'Đánh dấu promotion đã được sử dụng (Internal service call - không cần auth)' })
+  async usePromotionInternal(
+    @Param('id') id: string,
+    @Body() body: { userId: string },
+  ) {
+    if (!body.userId) {
+      throw new BadRequestException('User ID is required');
+    }
+    console.log(`📝 Received request to update promotion ${id} usage for user ${body.userId}`);
+    try {
+      await this.promotionService.usePromotion(id, body.userId);
+      console.log(`✅ Successfully updated promotion ${id} usage for user ${body.userId}`);
+      return { message: 'Promotion usage updated successfully' };
+    } catch (error: any) {
+      console.error(`❌ Failed to update promotion ${id} usage for user ${body.userId}:`, error.message);
+      throw error;
+    }
   }
 }
 
