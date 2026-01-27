@@ -109,8 +109,8 @@ export class UploadController {
   @Post("image")
   @ApiBearerAuth()
   @UseGuards(AuthGuard("jwt"), RolesGuard)
-  @Roles(Role.ADMIN, Role.EMPLOYEE, Role.BRANCH_MANAGER)
-  @ApiOperation({ summary: "Upload ảnh sản phẩm" })
+  @Roles(Role.ADMIN, Role.EMPLOYEE, Role.BRANCH_MANAGER, Role.SHIPPER)
+  @ApiOperation({ summary: "Upload ảnh sản phẩm hoặc bằng chứng giao hàng" })
   @ApiConsumes("multipart/form-data")
   @ApiBody({
     schema: {
