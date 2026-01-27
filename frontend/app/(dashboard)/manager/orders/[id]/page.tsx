@@ -312,14 +312,10 @@ export default function ManagerOrderDetailPage() {
                   <p className="text-sm text-secondary-500">Trạng thái thanh toán</p>
                   <Badge
                     variant={
-                      (order.paymentStatus?.toUpperCase() === "PAID" || order.isPaid)
+                      order.paymentStatus === "paid" || order.paymentStatus === "PAID"
                         ? "success"
-                        : (order.paymentStatus?.toUpperCase() === "UNPAID" || order.paymentStatus?.toUpperCase() === "PENDING")
+                        : order.paymentStatus === "pending" || order.paymentStatus === "UNPAID"
                         ? "warning"
-                        : order.paymentStatus === "REFUND_PENDING"
-                        ? "info"
-                        : order.paymentStatus === "REFUNDED"
-                        ? "success"
                         : "danger"
                     }
                   >

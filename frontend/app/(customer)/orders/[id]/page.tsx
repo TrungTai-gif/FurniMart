@@ -267,26 +267,26 @@ export default function OrderDetailPage() {
                       <p className="text-sm text-secondary-500">Trạng thái thanh toán</p>
                       <Badge
                         variant={
-                          (order.paymentStatus?.toUpperCase() === "PAID" || order.isPaid)
+                          (order.paymentStatus?.toLowerCase() === "paid" || order.paymentStatus === "PAID" || order.isPaid)
                             ? "success"
-                            : (order.paymentStatus?.toUpperCase() === "UNPAID" || order.paymentStatus?.toUpperCase() === "PENDING")
-                            ? "warning"
-                            : order.paymentStatus === "REFUND_PENDING"
-                            ? "info"
-                            : order.paymentStatus === "REFUNDED"
-                            ? "success"
-                            : "danger"
+                            : (order.paymentStatus?.toLowerCase() === "pending" || order.paymentStatus === "UNPAID" || order.paymentStatus === "REFUND_PENDING")
+                              ? "warning"
+                              : (order.paymentStatus === "REFUNDED")
+                                ? "info"
+                                : "danger"
                         }
                       >
-                        {(order.paymentStatus?.toUpperCase() === "PAID" || order.isPaid)
-                            ? "Đã thanh toán"
-                            : (order.paymentStatus?.toUpperCase() === "UNPAID" || order.paymentStatus?.toUpperCase() === "PENDING")
-                            ? "Chờ thanh toán"
-                            : order.paymentStatus === "REFUND_PENDING"
-                            ? "Đang hoàn tiền"
-                            : order.paymentStatus === "REFUNDED"
-                            ? "Đã hoàn tiền"
-                            : "Thất bại"}
+                        {(order.paymentStatus?.toLowerCase() === "paid" || order.paymentStatus === "PAID" || order.isPaid)
+                          ? "Đã thanh toán"
+                          : (order.paymentStatus?.toLowerCase() === "pending" || order.paymentStatus === "UNPAID")
+                            ? order.paymentMethod?.toLowerCase() === "cod" 
+                              ? "Thanh toán khi nhận hàng"
+                              : "Chờ thanh toán"
+                            : (order.paymentStatus === "REFUND_PENDING")
+                              ? "Đang hoàn tiền"
+                              : (order.paymentStatus === "REFUNDED")
+                                ? "Đã hoàn tiền"
+                                : "Thất bại"}
                       </Badge>
                     </div>
                     {order.branch && (

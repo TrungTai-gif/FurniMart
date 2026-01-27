@@ -32,7 +32,7 @@ export default function PromotionsPage() {
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
     setCopiedCode(code);
-    toast.success(`Đã sao chép mã thành công: ${code}`);
+    toast.success(`Đã sao chép mã: ${code}`);
     setTimeout(() => setCopiedCode(null), 2000);
   };
 
