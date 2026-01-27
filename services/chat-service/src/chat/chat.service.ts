@@ -81,7 +81,13 @@ export class ChatService {
   async assignToEmployee(chatId: string, employeeId: string): Promise<ChatDocument> {
     const chat = await this.getChatById(chatId);
     chat.employeeId = employeeId;
-    chat.status = 'pending';
+    // Keep status as 'open' to ensure chat remains visible after assignment
+    // Only change to 'pending' if status was already something else
+    if (chat.status === 'open' || !chat.status) {
+      chat.status = 'open'; // Keep as open so it remains in openChats list
+    } else if (chat.status !== 'closed') {
+      chat.status = 'pending';
+    }
     return chat.save();
   }
 
@@ -102,6 +108,11 @@ export class ChatService {
       chat.isReadByEmployee = true;
     }
     return chat.save();
+  }
+
+  async deleteChat(chatId: string): Promise<void> {
+    const chat = await this.getChatById(chatId);
+    await this.chatModel.findByIdAndDelete(chatId).exec();
   }
 }
 
