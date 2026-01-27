@@ -22,6 +22,7 @@ export default function ManagerChatPage() {
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const { data: openChats, isLoading: chatsLoading, refetch: refetchChats } = useQuery({
     queryKey: ["manager", "chats", "open"],
@@ -41,13 +42,42 @@ export default function ManagerChatPage() {
       queryClient.invalidateQueries({ queryKey: ["manager", "chats"] });
       setMessage("");
       setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        if (messagesContainerRef.current) {
+          messagesContainerRef.current.scrollTo({
+            top: messagesContainerRef.current.scrollHeight,
+            behavior: "smooth",
+          });
+        }
       }, 100);
     },
-    onError: () => {
-      toast.error("Không thể gửi tin nhắn");
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.message || error?.message || "Không thể gửi tin nhắn";
+      toast.error(errorMessage);
     },
   });
+
+  const assignChatMutation = useMutation({
+    mutationFn: () => chatService.assignToEmployee(selectedChatId || ""),
+    onSuccess: () => {
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ["manager", "chats", "open"] });
+      queryClient.invalidateQueries({ queryKey: ["chat", selectedChatId] });
+      // Refetch selected chat immediately to get updated data
+      if (selectedChatId) {
+        refetchChat();
+      }
+      toast.success("Đã nhận chat");
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.message || error?.message || "Không thể nhận chat";
+      toast.error(errorMessage);
+    },
+  });
+
+  const handleAssignChat = () => {
+    if (!selectedChatId) return;
+    assignChatMutation.mutate();
+  };
 
   useEffect(() => {
     if (selectedChatId) {
@@ -60,7 +90,12 @@ export default function ManagerChatPage() {
   }, [selectedChatId, refetchChat]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
   }, [selectedChat?.messages]);
 
   const handleSendMessage = (e: React.FormEvent) => {
@@ -137,34 +172,55 @@ export default function ManagerChatPage() {
               {selectedChatId && selectedChat ? (
                 <>
                   {/* Chat Header */}
-                  <div className="p-4 border-b border-stone-200 bg-stone-50">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
-                        <FiUser className="w-5 h-5 text-emerald-600" />
+                  <div className="p-4 border-b border-stone-200 bg-gradient-to-r from-emerald-50 to-stone-50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
+                          <FiUser className="w-5 h-5 text-emerald-600" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-stone-900">
+                            {(selectedChat as Chat).customerName}
+                          </p>
+                          <p className="text-xs text-stone-500">
+                            {(selectedChat as Chat).status === "open" && !(selectedChat as Chat).employeeId
+                              ? "Chưa được nhận"
+                              : (selectedChat as Chat).status === "open" ? "Đang xử lý" : "Đã đóng"}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-semibold text-stone-900">
-                          {(selectedChat as Chat).customerName}
-                        </p>
-                        <p className="text-xs text-stone-500">
-                          {(selectedChat as Chat).status === "open" ? "Đang mở" : "Đã đóng"}
-                        </p>
-                      </div>
+                      {!(selectedChat as Chat).employeeId && (selectedChat as Chat).status === "open" && (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={handleAssignChat}
+                          isLoading={assignChatMutation.isPending}
+                        >
+                          Nhận chat
+                        </Button>
+                      )}
                     </div>
                   </div>
 
                   {/* Messages */}
-                  <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                  <div 
+                    ref={messagesContainerRef}
+                    className="flex-1 overflow-y-auto p-4 space-y-4"
+                  >
                     {messages.length === 0 ? (
                       <div className="text-center text-stone-500 py-8">
                         Chưa có tin nhắn nào
                       </div>
                     ) : (
-                      messages.map((msg: Message) => {
+                      messages.map((msg: Message | any) => {
                         const isManager = msg.senderRole === "branch_manager" || msg.senderId === user?.id;
+                        // Backend uses 'message' field, frontend may use 'content'
+                        const messageContent = msg.message || msg.content || "";
+                        // Backend uses 'sentAt', frontend may use 'createdAt'
+                        const messageDate = msg.sentAt || msg.createdAt || new Date().toISOString();
                         return (
                           <div
-                            key={msg.id}
+                            key={msg.id || msg._id || Math.random()}
                             className={`flex ${isManager ? "justify-end" : "justify-start"}`}
                           >
                             <div
@@ -174,15 +230,15 @@ export default function ManagerChatPage() {
                                   : "bg-stone-100 text-stone-900"
                               }`}
                             >
-                              <p className="text-sm">{msg.content}</p>
+                              <p className="text-sm">{messageContent}</p>
                               <p
                                 className={`text-xs mt-1 ${
                                   isManager ? "text-emerald-100" : "text-stone-500"
                                 }`}
                               >
-                                {formatDistanceToNow(new Date(msg.createdAt), {
-                                  addSuffix: true,
-                                  locale: vi,
+                                {new Date(messageDate).toLocaleTimeString("vi-VN", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
                                 })}
                               </p>
                             </div>
@@ -194,7 +250,7 @@ export default function ManagerChatPage() {
                   </div>
 
                   {/* Message Input */}
-                  {(selectedChat as Chat).status === "open" && (
+                  {(selectedChat as Chat).status === "open" && (selectedChat as Chat).employeeId && (
                     <form
                       onSubmit={handleSendMessage}
                       className="p-4 border-t border-stone-200 bg-stone-50"
