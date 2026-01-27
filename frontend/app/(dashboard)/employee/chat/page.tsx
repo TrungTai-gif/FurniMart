@@ -23,6 +23,7 @@ export default function EmployeeChatPage() {
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const { data: openChats, isLoading: chatsLoading, refetch: refetchChats } = useQuery({
     queryKey: ["employee", "chats", "open"],
@@ -42,7 +43,12 @@ export default function EmployeeChatPage() {
       queryClient.invalidateQueries({ queryKey: ["employee", "chats"] });
       setMessage("");
       setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        if (messagesContainerRef.current) {
+          messagesContainerRef.current.scrollTo({
+            top: messagesContainerRef.current.scrollHeight,
+            behavior: "smooth",
+          });
+        }
       }, 100);
     },
     onError: () => {
@@ -73,7 +79,12 @@ export default function EmployeeChatPage() {
   }, [selectedChatId, refetchChat]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
   }, [selectedChat?.messages]);
 
   const handleSendMessage = (e: React.FormEvent) => {
@@ -186,17 +197,24 @@ export default function EmployeeChatPage() {
                   </div>
 
                   {/* Messages */}
-                  <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                  <div 
+                    ref={messagesContainerRef}
+                    className="flex-1 overflow-y-auto p-4 space-y-4"
+                  >
                     {messages.length === 0 ? (
                       <div className="text-center text-stone-500 py-8">
                         Chưa có tin nhắn nào
                       </div>
                     ) : (
-                      messages.map((msg: Message) => {
+                      messages.map((msg: Message | any) => {
                         const isEmployee = msg.senderRole === "employee" || msg.senderId === user?.id;
+                        // Backend uses 'message' field, frontend may use 'content'
+                        const messageContent = msg.message || msg.content || "";
+                        // Backend uses 'sentAt', frontend may use 'createdAt'
+                        const messageDate = msg.sentAt || msg.createdAt || new Date().toISOString();
                         return (
                           <div
-                            key={msg.id}
+                            key={msg.id || msg._id || Math.random()}
                             className={`flex ${isEmployee ? "justify-end" : "justify-start"}`}
                           >
                             <div
@@ -206,15 +224,15 @@ export default function EmployeeChatPage() {
                                   : "bg-stone-100 text-stone-900"
                               }`}
                             >
-                              <p className="text-sm">{msg.content}</p>
+                              <p className="text-sm">{messageContent}</p>
                               <p
                                 className={`text-xs mt-1 ${
                                   isEmployee ? "text-emerald-100" : "text-stone-500"
                                 }`}
                               >
-                                {formatDistanceToNow(new Date(msg.createdAt), {
-                                  addSuffix: true,
-                                  locale: vi,
+                                {new Date(messageDate).toLocaleTimeString("vi-VN", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
                                 })}
                               </p>
                             </div>
