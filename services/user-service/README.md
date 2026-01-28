@@ -734,6 +734,11 @@ curl -X GET http://localhost:3003/api/users/internal/60f1b5b5e1b3c1b5b5e1b3c1
 - [ ] Internal API authentication (API key hoặc service-to-service auth)
 - [ ] Rate limiting cho internal endpoints
 
+## 📞 Liên hệ & Hỗ trợ
+
+Để biết thêm thông tin về FurniMart project, vui lòng tham khảo documentation chính của dự án.
+
+---
 
 **Version**: 1.0.0  
 **Last Updated**: 2024

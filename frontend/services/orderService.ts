@@ -20,6 +20,7 @@ interface CreateOrderData {
   };
   promotionId?: string;
   promotionCode?: string;
+  discount?: number; // Promotion discount amount
 }
 
 export const orderService = {
@@ -87,6 +88,7 @@ export const orderService = {
         shippingCoordinates: data.shippingCoordinates,
         promotionId: data.promotionId,
         promotionCode: data.promotionCode,
+        discount: data.discount, // Send promotion discount amount
       }
     );
     return response.data;

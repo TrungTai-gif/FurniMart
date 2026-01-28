@@ -116,12 +116,12 @@ export class OrdersController {
   }
 
   @Put(':id/assign-shipper')
-  @Roles(Role.ADMIN, Role.BRANCH_MANAGER)
+  @Roles(Role.ADMIN, Role.BRANCH_MANAGER, Role.EMPLOYEE)
   @UseGuards(RolesGuard)
   @ApiOperation({ summary: 'Phân công shipper' })
   async assignShipper(@Param('id') orderId: string, @Body() body: any, @CurrentUser() user: any) {
-    // Verify order belongs to user's branch (for branch_manager)
-    if (user?.role === 'branch_manager') {
+    // Verify order belongs to user's branch (for branch_manager and employee)
+    if (user?.role === 'branch_manager' || user?.role === 'employee') {
       const order = await this.ordersService.findById(orderId);
       if (order.branchId?.toString() !== user?.branchId) {
         throw new BadRequestException('Bạn chỉ có thể phân công shipper cho đơn hàng của chi nhánh mình');

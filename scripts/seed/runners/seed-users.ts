@@ -122,13 +122,24 @@ export async function seedUsers() {
 
     const results = [];
     for (const user of usersData) {
-        const u = await User.findOneAndUpdate(
-            { email: user.email },
-            user,
-            { upsert: true, new: true }
-        );
-        results.push(u);
+        // Check if user exists
+        let existingUser = await User.findOne({ email: user.email });
+        
+        if (existingUser) {
+            // Delete existing user to ensure clean state
+            await User.deleteOne({ email: user.email });
+        }
+        
+        // Always create new user to ensure password is properly hashed
+        existingUser = await User.create(user);
+        results.push(existingUser);
     }
     console.log(`✅ Seeded ${results.length} users.`);
+    console.log(`📝 Test accounts:`);
+    console.log(`   Admin: admin@furnimart.com / admin123`);
+    console.log(`   Customer: customer1@gmail.com / password123`);
+    console.log(`   Manager: manager_d1@furnimart.com / password123`);
+    console.log(`   Employee: staff_d1@furnimart.com / password123`);
+    console.log(`   Shipper: shipper_d1@furnimart.com / password123`);
     return results;
 }

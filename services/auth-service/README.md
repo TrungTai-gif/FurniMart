@@ -590,3 +590,17 @@ Service sử dụng HTML email template cho password reset với:
 - Link đặt lại mật khẩu
 - Thông báo hết hạn (1 giờ)
 - Branding FurniMart
+
+## 🔮 Tính năng tương lai (TODO)
+
+- [ ] Implement proper refresh token mechanism (hiện tại refresh token = access token)
+- [ ] Token blacklist cho logout
+- [ ] Rate limiting cho authentication endpoints
+- [ ] Two-factor authentication (2FA)
+- [x] Password reset functionality ✅
+- [ ] Email verification
+- [ ] OAuth integration (Google, Facebook)
+- [ ] Session management
+- [ ] Audit logging
+- [ ] Multiple email providers support (không chỉ Gmail)
+

@@ -247,6 +247,7 @@ export const endpoints = {
     assign: (chatId: string) => `${API_BASE}/chat/${chatId}/assign`,
     updateStatus: (chatId: string) => `${API_BASE}/chat/${chatId}/status`,
     markAsRead: (chatId: string) => `${API_BASE}/chat/${chatId}/read`,
+    delete: (chatId: string) => `${API_BASE}/chat/${chatId}`,
   },
 
   // Settings

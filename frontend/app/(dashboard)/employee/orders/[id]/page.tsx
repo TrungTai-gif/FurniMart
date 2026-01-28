@@ -2,11 +2,15 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { orderService } from "@/services/orderService";
+import { userService } from "@/services/userService";
 import { useAuthStore } from "@/store/authStore";
 import Card, { CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
+import Modal from "@/components/ui/Modal";
+import Select from "@/components/ui/Select";
 import Skeleton from "@/components/ui/Skeleton";
 import PageShell from "@/components/layouts/PageShell";
 import PageHeader from "@/components/layouts/PageHeader";
@@ -17,7 +21,7 @@ import OrderItemsTable from "@/components/order/OrderItemsTable";
 import OrderStatusBadge from "@/components/order/OrderStatusBadge";
 import { routes } from "@/lib/config/routes";
 import { toast } from "react-toastify";
-import { Order } from "@/lib/types";
+import { Order, User } from "@/lib/types";
 
 export default function EmployeeOrderDetailPage() {
   const params = useParams();
@@ -25,11 +29,27 @@ export default function EmployeeOrderDetailPage() {
   const orderId = params.id as string;
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
+  const [assignShipperModalOpen, setAssignShipperModalOpen] = useState(false);
+  const [selectedShipperId, setSelectedShipperId] = useState("");
 
   const { data: order, isLoading, isError, refetch } = useQuery({
     queryKey: ["employee", "order", orderId],
     queryFn: () => orderService.getOrder(orderId),
   });
+
+  // Get shippers for assignment - load when order is loaded and user has branchId
+  const { data: shippers, isLoading: isLoadingShippers } = useQuery({
+    queryKey: ["employee", "shippers", user?.branchId],
+    queryFn: () => userService.getUsers("shipper"),
+    enabled: !!user?.branchId && !!order, // Load when order is loaded, not just when modal opens
+  });
+
+  const branchShippers = shippers?.filter((shipper: User) => {
+    // Compare branchId as strings to handle both string and ObjectId cases
+    const shipperBranchId = shipper.branchId?.toString();
+    const userBranchId = user?.branchId?.toString();
+    return shipperBranchId === userBranchId;
+  }) || [];
 
   const updateStatusMutation = useMutation({
     mutationFn: (status: string) => orderService.updateStatus(orderId, status),
@@ -40,6 +60,22 @@ export default function EmployeeOrderDetailPage() {
     },
     onError: (error: unknown) => {
       const message = error instanceof Error ? error.message : "Không thể cập nhật trạng thái";
+      toast.error(message);
+    },
+  });
+
+  const assignShipperMutation = useMutation({
+    mutationFn: (shipperId: string) => orderService.assignShipper(orderId, shipperId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["employee", "order", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["employee", "orders"] });
+      queryClient.invalidateQueries({ queryKey: ["shipper", "deliveries"] }); // Invalidate shipper queries
+      toast.success("Phân công shipper thành công");
+      setAssignShipperModalOpen(false);
+      setSelectedShipperId("");
+    },
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : "Không thể phân công shipper";
       toast.error(message);
     },
   });
@@ -121,6 +157,7 @@ export default function EmployeeOrderDetailPage() {
 
   const status = order.status.toUpperCase();
   const canUpdate = status === "CONFIRMED" || status === "PACKING";
+  const canAssignShipper = status === "READY_TO_SHIP" || status === "CONFIRMED" || status === "PACKING";
 
   return (
     <PageShell>
@@ -171,6 +208,36 @@ export default function EmployeeOrderDetailPage() {
                       className="w-full"
                     >
                       Sẵn sàng giao
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* EMPLOYEE: Assign Shipper */}
+            {canAssignShipper && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg font-semibold">Phân công shipper</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {order.shipperId ? (
+                    <div className="space-y-2">
+                      <p className="text-sm text-secondary-500">Shipper đã được phân công</p>
+                      <p className="font-medium text-secondary-900">
+                        {order.shipper?.fullName || order.shipper?.name || "N/A"}
+                      </p>
+                      {order.shipper?.phone && (
+                        <p className="text-sm text-secondary-600">{order.shipper.phone}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <Button
+                      variant="primary"
+                      onClick={() => setAssignShipperModalOpen(true)}
+                      className="w-full"
+                    >
+                      Phân công shipper
                     </Button>
                   )}
                 </CardContent>
@@ -268,6 +335,72 @@ export default function EmployeeOrderDetailPage() {
           </div>
         </div>
       </main>
+
+      {/* Assign Shipper Modal */}
+      <Modal
+        isOpen={assignShipperModalOpen}
+        onClose={() => {
+          setAssignShipperModalOpen(false);
+          setSelectedShipperId("");
+        }}
+        title="Phân công shipper"
+      >
+        <div className="space-y-4">
+          {isLoadingShippers ? (
+            <div className="text-center py-4">
+              <p className="text-sm text-secondary-500">Đang tải danh sách shipper...</p>
+            </div>
+          ) : (
+            <>
+              <Select
+                label="Chọn shipper"
+                options={[
+                  { value: "", label: "Chọn shipper..." },
+                  ...branchShippers.map((shipper: User) => ({
+                    value: shipper.id,
+                    label: `${shipper.fullName || shipper.name} - ${shipper.phone || ""}`,
+                  })),
+                ]}
+                value={selectedShipperId}
+                onChange={(e) => setSelectedShipperId(e.target.value)}
+                disabled={isLoadingShippers || branchShippers.length === 0}
+              />
+              {branchShippers.length === 0 && !isLoadingShippers && (
+                <p className="text-sm text-secondary-500">
+                  Chưa có shipper nào trong chi nhánh. Vui lòng thêm shipper trước.
+                </p>
+              )}
+            </>
+          )}
+          <div className="flex gap-3 pt-4">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setAssignShipperModalOpen(false);
+                setSelectedShipperId("");
+              }}
+              className="flex-1"
+            >
+              Hủy
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => {
+                if (!selectedShipperId) {
+                  toast.error("Vui lòng chọn shipper");
+                  return;
+                }
+                assignShipperMutation.mutate(selectedShipperId);
+              }}
+              isLoading={assignShipperMutation.isPending}
+              disabled={!selectedShipperId || branchShippers.length === 0}
+              className="flex-1"
+            >
+              Phân công
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </PageShell>
   );
 }
