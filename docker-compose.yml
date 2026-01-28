@@ -51,6 +51,7 @@ services:
       BRANCH_SERVICE_URL: http://branch-service:3017
       WALLET_SERVICE_URL: http://wallet-service:3018
       CART_SERVICE_URL: http://cart-service:3019
+      EMAIL_SERVICE_URL: http://email-service:3020
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:3001}
     depends_on:
       auth-service:
@@ -89,6 +90,8 @@ services:
         condition: service_healthy
       cart-service:
         condition: service_healthy
+      email-service:
+        condition: service_healthy
     networks:
       - furnimart-network
     healthcheck:
@@ -111,8 +114,8 @@ services:
       NODE_ENV: ${NODE_ENV:-production}
       MONGODB_URI: mongodb://admin:admin123@mongodb:27017/furnimart?authSource=admin
       JWT_SECRET: ${JWT_SECRET:-furnimart-secret-key-2024}
-      GMAIL_USER: ${GMAIL_USER:-nguyentai2292005@gmail.com}
-      GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD:-ubwdhrklqkkscyrk}
+      EMAIL_SERVICE_URL: http://email-service:3020
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:-furnimart-internal-secret-2024}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
     depends_on:
       mongodb:
@@ -193,9 +196,8 @@ services:
       PRODUCT_SERVICE_URL: http://product-service:3004
       USER_SERVICE_URL: http://user-service:3003
       WAREHOUSE_SERVICE_URL: http://warehouse-service:3009
+      EMAIL_SERVICE_URL: http://email-service:3020
       INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:-furnimart-internal-secret-2024}
-      GMAIL_USER: ${GMAIL_USER:-}
-      GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD:-}
     depends_on:
       mongodb:
         condition: service_healthy
@@ -246,6 +248,8 @@ services:
       NODE_ENV: ${NODE_ENV:-production}
       MONGODB_URI: mongodb://admin:admin123@mongodb:27017/furnimart?authSource=admin
       JWT_SECRET: ${JWT_SECRET:-furnimart-secret-key-2024}
+      ORDER_SERVICE_URL: http://order-service:3005
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:-furnimart-internal-secret-2024}
     depends_on:
       mongodb:
         condition: service_healthy
@@ -321,6 +325,8 @@ services:
       NODE_ENV: ${NODE_ENV:-production}
       MONGODB_URI: mongodb://admin:admin123@mongodb:27017/furnimart?authSource=admin
       JWT_SECRET: ${JWT_SECRET:-furnimart-secret-key-2024}
+      ORDER_SERVICE_URL: http://order-service:3005
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:-furnimart-internal-secret-2024}
     depends_on:
       mongodb:
         condition: service_healthy
@@ -576,6 +582,29 @@ services:
       - furnimart-network
     healthcheck:
       test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3019/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  email-service:
+    build:
+      context: .
+      dockerfile: ./services/email-service/Dockerfile
+    container_name: furnimart-email-service
+    restart: unless-stopped
+    ports:
+      - '3020:3020'
+    environment:
+      PORT: 3020
+      NODE_ENV: ${NODE_ENV:-production}
+      GMAIL_USER: ${GMAIL_USER:-}
+      GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD:-}
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:-furnimart-internal-secret-2024}
+    networks:
+      - furnimart-network
+    healthcheck:
+      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3020/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
       interval: 30s
       timeout: 10s
       retries: 3
