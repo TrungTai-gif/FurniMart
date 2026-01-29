@@ -1,14 +1,14 @@
 import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards, Req, BadRequestException } from '@nestjs/common';
-import { Role } from '@shared/config/rbac-matrix';
+import { Role } from '../common/config/rbac-matrix';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
 import { PromotionService } from './promotion.service';
 import { CreatePromotionDto, UpdatePromotionDto, ApplyPromotionDto } from './dtos/promotion.dto';
-import { CurrentUser } from '@shared/common/decorators/user.decorator';
-import { Roles } from '@shared/common/decorators/roles.decorator';
-import { RolesGuard } from '@shared/common/guards/roles.guard';
-import { Public } from '@shared/common/decorators/roles.decorator';
+import { CurrentUser } from '../common/decorators/user.decorator';
+import { Roles } from '../common/decorators/roles.decorator';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Public } from '../common/decorators/roles.decorator';
 
 @ApiTags('Promotions')
 @Controller('promotions')
