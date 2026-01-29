@@ -99,7 +99,7 @@ export class SettingsService {
             { label: 'Chính sách bảo mật', url: '#' },
             { label: 'Điều khoản dịch vụ', url: '#' },
           ],
-          copyright: '© 2024 FurniMart. Tất cả quyền được bảo lưu.',
+          copyright: '© 2026 FurniMart. Tất cả quyền được bảo lưu.',
         },
       };
     }
