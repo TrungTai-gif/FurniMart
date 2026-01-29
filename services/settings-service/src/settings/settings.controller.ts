@@ -1,9 +1,9 @@
 import { Controller, Get, Put, Body, UseGuards } from '@nestjs/common';
-import { Role } from '@shared/config/rbac-matrix';
+import { Role } from '../common/config/rbac-matrix';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
-import { Roles } from '@shared/common/decorators/roles.decorator';
-import { RolesGuard } from '@shared/common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
+import { RolesGuard } from '../common/guards/roles.guard';
 import { SettingsService } from './settings.service';
 import { UpdateSettingsDto } from './dtos/settings.dto';
 
