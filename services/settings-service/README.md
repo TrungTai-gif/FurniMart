@@ -186,7 +186,7 @@ http://localhost:3011/api
         { "label": "Hướng dẫn mua hàng", "url": "#" },
         { "label": "Chính sách đổi trả", "url": "#" }
       ],
-      "copyright": "© 2024 FurniMart. Tất cả quyền được bảo lưu."
+      "copyright": "© 2026 FurniMart. Tất cả quyền được bảo lưu."
     }
   }
   ```
@@ -638,6 +638,6 @@ Có thể mở rộng để hỗ trợ multi-tenant bằng cách thêm `tenantId
 ---
 
 **Version**: 1.0.0  
-**Last Updated**: 2024
+
 
 

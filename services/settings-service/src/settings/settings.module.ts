@@ -3,7 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { SettingsController } from './settings.controller';
 import { SettingsService } from './settings.service';
 import { Settings, SettingsSchema } from './schemas/settings.schema';
-import { AuthModule } from '@shared/common/auth/auth.module';
+import { AuthModule } from '../common/auth/auth.module';
 
 @Module({
   imports: [

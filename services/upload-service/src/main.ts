@@ -1,8 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { HttpExceptionFilter } from '@shared/common/exceptions/http-exception.filter';
-import { ResponseInterceptor } from '@shared/common/interceptors/response.interceptor';
+import { HttpExceptionFilter } from './common/exceptions/http-exception.filter';
+import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { AppModule } from './app.module';
 import { existsSync, mkdirSync } from 'fs';
 import { join } from 'path';

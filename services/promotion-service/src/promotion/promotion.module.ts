@@ -3,7 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { PromotionController } from './promotion.controller';
 import { PromotionService } from './promotion.service';
 import { Promotion, PromotionSchema } from './schemas/promotion.schema';
-import { AuthModule } from '@shared/common/auth/auth.module';
+import { AuthModule } from '../common/auth/auth.module';
 
 @Module({
   imports: [

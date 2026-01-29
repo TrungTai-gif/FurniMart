@@ -33,15 +33,16 @@
 ### Configuration
 - **@nestjs/config** (v3.1.0): Quản lý environment variables và configuration
 
-### Shared Modules
-- **@shared/common**: Shared package chứa các utilities, decorators, guards, và interceptors
+### Common Modules (Internal)
+Service sử dụng các common modules nội bộ:
   - `HttpExceptionFilter`: Xử lý exceptions toàn cục
   - `ResponseInterceptor`: Chuẩn hóa response format
-  - `AuthModule`: JWT authentication module
+  - `AuthModule`: JWT authentication module (nội bộ)
   - `RolesGuard`: Role-based authorization guard
+  - `JwtAuthGuard`: JWT authentication guard
   - `@Roles()` decorator: Đánh dấu role được phép truy cập
   - `@CurrentUser()` decorator: Lấy thông tin user hiện tại từ JWT
-  - `Role` enum: Định nghĩa các role trong hệ thống
+  - `Role` enum: Định nghĩa các role trong hệ thống (từ `rbac-matrix.ts`)
 
 ## 🏗️ Kiến trúc và Nguyên lý hoạt động
 
@@ -385,10 +386,27 @@ Service cung cấp internal endpoints để các service khác có thể query u
 
 ##### Lấy thông tin user theo ID (Internal)
 - **GET** `/users/internal/:id`
-- **Authentication**: Không cần (internal service call)
+- **Authentication**: Không cần JWT (internal service call)
+- **Security**: Nên được bảo vệ ở network level (chỉ cho phép internal services trong Docker network)
 - **Response** (200): User object (không bao gồm password)
-- **Use Case**: Các service khác (order-service, cart-service, etc.) có thể query user info
-- **Lưu ý**: Endpoint này nên được bảo vệ ở network level (chỉ cho phép internal services)
+  ```json
+  {
+    "_id": "60f1b5b5e1b3c1b5b5e1b3c1",
+    "email": "user@furnimart.vn",
+    "name": "Nguyễn Văn A",
+    "phone": "+84123456789",
+    "role": "customer",
+    "addresses": [...]
+  }
+  ```
+- **Use Case**: 
+  - Order service query user info để gửi email xác nhận đơn hàng
+  - Auth service query user info để validate
+  - Các service khác cần thông tin user
+- **Lưu ý**: 
+  - Endpoint này không yêu cầu JWT token
+  - Nên được bảo vệ ở network level (Docker network isolation)
+  - Chỉ các service trong cùng Docker network mới có thể truy cập
 
 ### Swagger Documentation
 
@@ -585,25 +603,26 @@ User Service được thiết kế để hoạt động độc lập nhưng tíc
 1. **Auth Service**: 
    - Sử dụng cùng `JWT_SECRET` để validate tokens
    - User được tạo qua auth-service, user-service quản lý thông tin và địa chỉ
+   - Auth service có thể query user information từ user-service qua internal endpoint
 
 2. **Order Service**: 
    - Order service có thể query user information từ user-service qua internal endpoint
    - Sử dụng địa chỉ từ user.addresses cho giao hàng
-   - Internal endpoint: `GET /api/users/internal/:id` (không cần auth)
+   - Internal endpoint: `GET /api/users/internal/:id` (không cần auth, chỉ dùng cho service-to-service)
 
-3. **Frontend**: 
+3. **Email Service**: 
+   - Order service và auth service sử dụng email-service để gửi email
+   - User-service cung cấp thông tin user (email) cho các service khác để gửi email
+   - Email service được tách riêng thành microservice độc lập (port 3020)
+
+4. **Frontend**: 
    - Cung cấp API để frontend quản lý profile và địa chỉ
    - Admin panel quản lý users
+   - Customer panel quản lý thông tin cá nhân và địa chỉ giao hàng
 
-4. **API Gateway**: 
-   - Service này có thể được expose qua API Gateway
-
-5. **Shared Package**: 
-   - Sử dụng `@shared/common` cho:
-     - `AuthModule`: JWT authentication
-     - `RolesGuard`: Role-based authorization
-     - `Role` enum: Role definitions
-     - Common decorators, filters, interceptors
+5. **API Gateway**: 
+   - Service được expose qua API Gateway (port 3001)
+   - Tất cả requests từ frontend đi qua API Gateway
 
 ## 🧪 Testing
 
@@ -679,16 +698,20 @@ curl -X GET http://localhost:3003/api/users/internal/60f1b5b5e1b3c1b5b5e1b3c1
 1. **Environment Variables**: Luôn sử dụng environment variables cho sensitive data
 2. **JWT Secret**: Phải giống với auth-service để validate tokens
 3. **HTTPS**: Luôn sử dụng HTTPS trong production
-4. **Password Hashing**: Luôn hash password khi cập nhật (đã tự động trong service)
+4. **Password Hashing**: Luôn hash password khi cập nhật (đã tự động trong service với bcrypt, 10 rounds)
 5. **Soft Delete**: Không xóa user đã có đơn hàng để giữ lịch sử
 6. **Indexing**: Cân nhắc thêm indexes cho:
    - `email` (đã có unique index)
    - `role` và `branchId` (cho queries của branch manager)
    - `deletedAt` (cho soft delete filtering)
-7. **Validation**: Đảm bảo validate tất cả input trước khi lưu
-8. **Error Handling**: Service đã có global exception filter
+7. **Validation**: Đảm bảo validate tất cả input trước khi lưu (sử dụng class-validator)
+8. **Error Handling**: Service đã có global exception filter (`HttpExceptionFilter`)
 9. **Logging**: Cân nhắc thêm logging cho các operations quan trọng
 10. **Monitoring**: Setup monitoring và alerting cho service health
+11. **Internal API Security**: Internal endpoints (`/users/internal/:id`) nên được bảo vệ ở network level
+12. **CORS**: Cấu hình CORS phù hợp cho production (không dùng `origin: true`)
+13. **Rate Limiting**: Cân nhắc thêm rate limiting cho các endpoints quan trọng
+14. **Database Connection**: Sử dụng connection pooling và retry logic cho MongoDB
 
 ## 💡 Use Cases
 
@@ -731,8 +754,10 @@ curl -X GET http://localhost:3003/api/users/internal/60f1b5b5e1b3c1b5b5e1b3c1
 - [ ] User notification preferences
 - [ ] User social media links
 - [ ] User tags/categories
-- [ ] Internal API authentication (API key hoặc service-to-service auth)
+- [ ] Internal API authentication (API key hoặc service-to-service secret header)
 - [ ] Rate limiting cho internal endpoints
+- [ ] User caching (Redis) để giảm database queries
+- [ ] Webhook support cho user events (created, updated, deleted)
 
 ## 📞 Liên hệ & Hỗ trợ
 
@@ -741,6 +766,6 @@ curl -X GET http://localhost:3003/api/users/internal/60f1b5b5e1b3c1b5b5e1b3c1
 ---
 
 **Version**: 1.0.0  
-**Last Updated**: 2024
+**Email Service Integration**: Email functionality đã được tách ra thành email-service riêng (port 3020)
 
 
