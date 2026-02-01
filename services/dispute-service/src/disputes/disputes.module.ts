@@ -4,7 +4,7 @@ import { HttpModule } from '@nestjs/axios';
 import { DisputesController } from './disputes.controller';
 import { DisputesService } from './disputes.service';
 import { Dispute, DisputeSchema } from './schemas/dispute.schema';
-import { AuthModule } from '@shared/common/auth/auth.module';
+import { AuthModule } from '../common/auth/auth.module';
 
 @Module({
   imports: [
