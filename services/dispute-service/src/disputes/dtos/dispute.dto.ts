@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsArray, IsEnum, IsNumber, Min } from 'class-validator';
+import { IsString, IsOptional, IsArray, IsEnum, IsNumber, Min, MinLength, MaxLength } from 'class-validator';
 
 export class CreateDisputeDto {
   @IsString()
@@ -11,6 +11,8 @@ export class CreateDisputeDto {
   reason!: string;
 
   @IsString()
+  @MinLength(20, { message: 'Mô tả chi tiết phải có ít nhất 20 ký tự' })
+  @MaxLength(100, { message: 'Mô tả không được vượt quá 100 ký tự' })
   description!: string;
 
   @IsOptional()
