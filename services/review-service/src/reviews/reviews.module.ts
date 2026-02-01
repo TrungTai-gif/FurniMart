@@ -4,7 +4,7 @@ import { HttpModule } from '@nestjs/axios';
 import { ReviewsService } from './reviews.service';
 import { ReviewsController } from './reviews.controller';
 import { Review, ReviewSchema } from './schemas/review.schema';
-import { AuthModule } from '@shared/common/auth/auth.module';
+import { AuthModule } from '../common/auth/auth.module';
 
 @Module({
   imports: [
