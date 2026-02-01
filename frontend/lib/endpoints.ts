@@ -212,6 +212,7 @@ export const endpoints = {
     myReviews: `${API_BASE}/reviews/my-reviews`,
     update: (id: string) => `${API_BASE}/reviews/${id}`,
     delete: (id: string) => `${API_BASE}/reviews/${id}`,
+    unreviewedFromOrder: (orderId: string) => `${API_BASE}/reviews/order/${orderId}/unreviewed`,
   },
 
   // Disputes
