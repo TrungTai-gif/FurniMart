@@ -6,30 +6,36 @@ import { logger } from "@/lib/logger";
 interface CreateDisputeData {
   orderId: string;
   type: DisputeType | "return" | "warranty" | "assembly" | "quality" | "damage" | "missing" | "wrong_item" | "delivery" | "payment" | "other"; // Support both backend and legacy types
-  reason: string;
+  reason: string; // Required by backend, will be filled from description if not provided
   description: string; // Backend requires description
   images?: string[]; // Evidence images
 }
 
 export const disputeService = {
   create: async (data: CreateDisputeData): Promise<Dispute> => {
-    // Backend CreateDisputeDto requires: orderId, type (enum), reason, description, images (optional)
-    // Map legacy types to backend types
-    const typeMap: Record<string, string> = {
-      'return': 'other',
-      'warranty': 'other',
-      'assembly': 'other',
-    };
-    const backendType = typeMap[data.type] || data.type;
-    
-    const response = await apiClient.post<Dispute>(endpoints.disputes.create, {
-      orderId: data.orderId,
-      type: backendType,
-      reason: data.reason,
-      description: data.description,
-      ...(data.images && data.images.length > 0 && { images: data.images }),
-    });
-    return response.data;
+    try {
+      // Backend CreateDisputeDto requires: orderId, type (enum), reason, description, images (optional)
+      // Map legacy types to backend types
+      const typeMap: Record<string, string> = {
+        'return': 'other',
+        'warranty': 'other',
+        'assembly': 'other',
+      };
+      const backendType = typeMap[data.type] || data.type;
+      
+      const response = await apiClient.post<Dispute>(endpoints.disputes.create, {
+        orderId: data.orderId,
+        type: backendType,
+        reason: data.reason || data.description.substring(0, 100), // Fallback if reason is empty
+        description: data.description,
+        ...(data.images && data.images.length > 0 && { images: data.images }),
+      });
+      return response.data;
+    } catch (error: any) {
+      // Re-throw with better error message
+      const errorMessage = error?.response?.data?.message || error?.message || 'Không thể tạo yêu cầu hỗ trợ';
+      throw new Error(errorMessage);
+    }
   },
 
   getDisputes: async (status?: string): Promise<Dispute[]> => {
