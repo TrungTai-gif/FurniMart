@@ -8,7 +8,8 @@ import { CreateDisputeDto, UpdateDisputeDto } from './dtos/dispute.dto';
 
 @Injectable()
 export class DisputesService {
-  private readonly ORDER_SERVICE_URL = process.env.ORDER_SERVICE_URL || 'http://order-service:3015';
+  private readonly ORDER_SERVICE_URL = process.env.ORDER_SERVICE_URL || 'http://order-service:3005';
+  private readonly INTERNAL_SERVICE_SECRET = process.env.INTERNAL_SERVICE_SECRET || 'furnimart-internal-secret-2024';
 
   constructor(
     @InjectModel(Dispute.name) private disputeModel: Model<DisputeDocument>,
@@ -18,12 +19,43 @@ export class DisputesService {
   async create(customerId: string, customerName: string, createDisputeDto: CreateDisputeDto): Promise<DisputeDocument> {
     // 0.4: Validate dispute creation - order must belong to customer and have valid status
     try {
-      const orderUrl = `${this.ORDER_SERVICE_URL}/api/orders/${createDisputeDto.orderId}`;
-      const orderResponse = await firstValueFrom(this.httpService.get(orderUrl));
-      const order = (orderResponse.data as any);
+      // Use internal endpoint that doesn't require JWT auth
+      const orderUrl = `${this.ORDER_SERVICE_URL}/api/orders/${createDisputeDto.orderId}/internal`;
+      
+      console.log(`[DisputeService] Fetching order ${createDisputeDto.orderId} from ${orderUrl}`);
+      console.log(`[DisputeService] Using internal secret: ${this.INTERNAL_SERVICE_SECRET ? 'SET' : 'NOT SET'}`);
+      
+      const orderResponse = await firstValueFrom(
+        this.httpService.get(orderUrl, {
+          headers: {
+            'x-internal-secret': this.INTERNAL_SERVICE_SECRET,
+          },
+        })
+      );
+      
+      // Handle response format from ResponseInterceptor: { success, statusCode, message, data }
+      const responseData = orderResponse.data;
+      const order = responseData?.data || responseData;
+      
+      console.log(`[DisputeService] Order response received:`, {
+        hasData: !!order,
+        orderId: order?._id || order?.id,
+        customerId: order?.customerId,
+        status: order?.status,
+        branchId: order?.branchId,
+      });
+      
+      if (!order) {
+        throw new NotFoundException('Không tìm thấy đơn hàng');
+      }
       
       // 2: Chỉ tạo dispute cho đơn của mình
-      if (order.customerId?.toString() !== customerId && order.customerId !== customerId) {
+      const orderCustomerId = order.customerId?.toString() || order.customerId;
+      const requestCustomerId = customerId.toString();
+      
+      console.log(`[DisputeService] Comparing customer IDs: order=${orderCustomerId}, request=${requestCustomerId}`);
+      
+      if (orderCustomerId !== requestCustomerId) {
         throw new ForbiddenException('Bạn chỉ có thể tạo khiếu nại cho đơn hàng của chính mình');
       }
       
@@ -32,7 +64,7 @@ export class DisputesService {
       const orderStatus = order.status?.toUpperCase();
       if (!allowedStatuses.includes(orderStatus)) {
         throw new BadRequestException(
-          `Chỉ có thể tạo khiếu nại khi đơn hàng ở trạng thái: ${allowedStatuses.join(', ')}. Đơn hàng hiện tại: ${orderStatus}`
+          `Chỉ có thể tạo khiếu nại khi đơn hàng ở trạng thái: ${allowedStatuses.join(', ')}. Đơn hàng hiện tại: ${orderStatus || 'N/A'}`
         );
       }
       
@@ -49,12 +81,40 @@ export class DisputesService {
         status: 'OPEN', // 0.4: Status flow chuẩn
       });
     } catch (error: any) {
-      if (error instanceof ForbiddenException || error instanceof BadRequestException) {
+      if (error instanceof ForbiddenException || error instanceof BadRequestException || error instanceof NotFoundException) {
         throw error;
       }
-      // If order service is unavailable, log warning but allow dispute (graceful degradation)
-      console.warn('Could not validate order for dispute:', error.message);
-      // Still require branchId - will fail if order doesn't have it
+      
+      // Handle HTTP errors from axios
+      if (error.response) {
+        const status = error.response.status;
+        const responseData = error.response.data;
+        const message = responseData?.message || responseData?.error || 'Không thể xác thực đơn hàng';
+        
+        console.error(`[DisputeService] Order service error:`, {
+          status,
+          message,
+          responseData,
+        });
+        
+        if (status === 404) {
+          throw new NotFoundException('Không tìm thấy đơn hàng');
+        }
+        if (status === 401 || status === 403) {
+          throw new ForbiddenException('Không có quyền truy cập đơn hàng này');
+        }
+        if (status === 400 && message.includes('Invalid internal secret')) {
+          throw new BadRequestException('Lỗi xác thực dịch vụ. Vui lòng liên hệ quản trị viên.');
+        }
+        throw new BadRequestException(message);
+      }
+      
+      // If order service is unavailable, log warning and throw error
+      console.error('[DisputeService] Could not validate order for dispute:', {
+        error: error.message,
+        stack: error.stack,
+        orderId: createDisputeDto.orderId,
+      });
       throw new BadRequestException('Không thể xác thực đơn hàng. Vui lòng thử lại sau.');
     }
   }
