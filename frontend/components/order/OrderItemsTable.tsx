@@ -17,9 +17,23 @@ interface OrderItemsTableProps {
   orderId?: string;
   orderStatus?: string;
   canEdit?: boolean; // Allow editing quantity
+  onReviewClick?: (productId: string, productName: string) => void; // Callback for review button
+  unreviewedProductIds?: Set<string>; // Set of product IDs that haven't been reviewed
+  isLoadingUnreviewed?: boolean; // Whether the unreviewed products query is loading
+  unreviewedProductsData?: Array<{ productId: string; productName: string; quantity: number; image?: string }>; // The actual data from query to check if query completed successfully
 }
 
-export default function OrderItemsTable({ items, showImage = true, orderId, orderStatus, canEdit }: OrderItemsTableProps) {
+export default function OrderItemsTable({ 
+  items, 
+  showImage = true, 
+  orderId, 
+  orderStatus, 
+  canEdit,
+  onReviewClick,
+  unreviewedProductIds,
+  isLoadingUnreviewed = false,
+  unreviewedProductsData,
+}: OrderItemsTableProps) {
   const queryClient = useQueryClient();
   
   // Check if order can be edited (PENDING_CONFIRMATION or CONFIRMED)
@@ -64,6 +78,9 @@ export default function OrderItemsTable({ items, showImage = true, orderId, orde
             <th className="text-right py-3 px-4 text-sm font-medium text-secondary-600">Số lượng</th>
             <th className="text-right py-3 px-4 text-sm font-medium text-secondary-600">Giá</th>
             <th className="text-right py-3 px-4 text-sm font-medium text-secondary-600">Tổng</th>
+            {onReviewClick && orderStatus && (orderStatus.toUpperCase() === "DELIVERED" || orderStatus.toUpperCase() === "COMPLETED") && (
+              <th className="text-center py-3 px-4 text-sm font-medium text-secondary-600">Thao tác</th>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -151,6 +168,75 @@ export default function OrderItemsTable({ items, showImage = true, orderId, orde
                   {formatCurrency(item.price * item.quantity)}
                 </span>
               </td>
+              {onReviewClick && orderStatus && (orderStatus.toUpperCase() === "DELIVERED" || orderStatus.toUpperCase() === "COMPLETED") && (
+                <td className="py-3 px-4 text-center">
+                  {(() => {
+                    // Normalize productId to string for consistent comparison
+                    const productId = String(
+                      item.productId?.toString() 
+                      || item.productId 
+                      || item.product?.id?.toString()
+                      || item.product?.id
+                      || item.product?._id?.toString()
+                      || item.product?._id
+                      || ""
+                    );
+                    
+                    if (!productId || productId === "undefined" || productId === "null" || productId === "") {
+                      return null; // Don't show button if we can't identify the product
+                    }
+                    
+                    // IMPORTANT: Only mark as reviewed if:
+                    // 1. Query is done (not loading)
+                    // 2. Query returned data (successful query, not error) AND is an array
+                    // 3. We have a valid productId
+                    // 4. Query returned a non-empty array (meaning query succeeded and has data)
+                    // 5. productId is NOT in the unreviewed list (this specific product was reviewed)
+                    // 
+                    // NOTE: We do NOT mark as reviewed if query returns empty array []
+                    // because empty array could mean:
+                    // - All products are reviewed (correct case)
+                    // - Query failed or order not DELIVERED (wrong case - would show false "Đã đánh giá")
+                    // To be safe, we only mark as reviewed when we have explicit confirmation
+                    // that the product is NOT in the unreviewed list
+                    const hasValidProductId = productId && productId !== "undefined" && productId !== "null" && productId !== "";
+                    const queryHasData = unreviewedProductsData !== undefined && unreviewedProductsData !== null;
+                    const querySucceeded = !isLoadingUnreviewed 
+                      && queryHasData
+                      && Array.isArray(unreviewedProductsData);
+                    
+                    // Only mark as reviewed if:
+                    // - Query succeeded
+                    // - Query returned non-empty array (has data to compare)
+                    // - productId is valid
+                    // - productId is NOT in unreviewed list (explicitly reviewed)
+                    const isReviewed = querySucceeded
+                      && hasValidProductId
+                      && unreviewedProductIds
+                      && unreviewedProductsData.length > 0 // Must have data to compare (non-empty array)
+                      && !unreviewedProductIds.has(productId); // Product explicitly not in unreviewed list
+                    
+                    if (isReviewed) {
+                      return (
+                        <span className="text-xs text-secondary-500">Đã đánh giá</span>
+                      );
+                    }
+                    
+                    return (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => {
+                          const productName = item.product?.name || item.productName || "Sản phẩm";
+                          onReviewClick(productId, productName);
+                        }}
+                      >
+                        Đánh giá
+                      </Button>
+                    );
+                  })()}
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
