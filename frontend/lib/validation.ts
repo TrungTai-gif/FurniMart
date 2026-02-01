@@ -85,19 +85,33 @@ export const productSchema = z.object({
 export const reviewSchema = z.object({
   productId: z.string().min(1, "Vui lòng chọn sản phẩm"),
   rating: z.number().min(1).max(5),
-  comment: z.string().min(10, "Nhận xét phải có ít nhất 10 ký tự"),
+  comment: z.string()
+    .min(10, "Nhận xét phải có ít nhất 10 ký tự")
+    .max(100, "Nhận xét không được vượt quá 100 ký tự")
+    .refine((val) => val.trim().length >= 10, {
+      message: "Nhận xét phải có ít nhất 10 ký tự",
+    }),
 });
 
 export const disputeSchema = z.object({
-  orderId: z.string().min(1, "Vui lòng chọn đơn hàng"),
+  orderId: z.string().min(1, "Vui lòng chọn đơn hàng").refine((val) => val.trim() !== "", {
+    message: "Vui lòng chọn đơn hàng",
+  }),
   type: z.enum([
     // Backend types
     "quality", "damage", "missing", "wrong_item", "delivery", "payment", "other",
     // Legacy types for compatibility
     "return", "warranty", "assembly"
-  ]),
-  reason: z.string().min(10, "Lý do phải có ít nhất 10 ký tự"),
-  description: z.string().min(20, "Mô tả chi tiết phải có ít nhất 20 ký tự"), // Backend requires description
+  ], {
+    errorMap: () => ({ message: "Vui lòng chọn loại yêu cầu" }),
+  }),
+  reason: z.string().optional(), // Optional in form, will be filled from description if empty
+  description: z.string()
+    .min(20, "Mô tả chi tiết phải có ít nhất 20 ký tự")
+    .max(100, "Mô tả không được vượt quá 100 ký tự")
+    .refine((val) => val.trim().length >= 20, {
+      message: "Mô tả chi tiết phải có ít nhất 20 ký tự",
+    }),
   images: z.array(z.string().url()).optional(), // Evidence images
 });
 
