@@ -3,7 +3,7 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { ReviewsService } from './reviews.service';
 import { CreateReviewDto } from './dtos/review.dto';
-import { CurrentUser } from '@shared/common/decorators/user.decorator';
+import { CurrentUser } from '../common/decorators/user.decorator';
 
 @ApiTags('Reviews')
 @Controller('reviews')
@@ -46,5 +46,16 @@ export class ReviewsController {
   @ApiOperation({ summary: 'Xóa đánh giá' })
   async delete(@Param('id') id: string) {
     return this.reviewsService.delete(id);
+  }
+
+  @Get('order/:orderId/unreviewed')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'))
+  @ApiOperation({ summary: 'Lấy danh sách sản phẩm chưa được đánh giá từ đơn hàng' })
+  async getUnreviewedProductsFromOrder(
+    @Param('orderId') orderId: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.reviewsService.getUnreviewedProductsFromOrder(orderId, userId);
   }
 }
