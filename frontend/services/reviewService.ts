@@ -46,5 +46,12 @@ export const reviewService = {
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(endpoints.reviews.delete(id));
   },
+
+  getUnreviewedProductsFromOrder: async (orderId: string): Promise<Array<{ productId: string; productName: string; quantity: number; image?: string }>> => {
+    const response = await apiClient.get<Array<{ productId: string; productName: string; quantity: number; image?: string }>>(
+      endpoints.reviews.unreviewedFromOrder(orderId)
+    );
+    return response.data;
+  },
 };
 
