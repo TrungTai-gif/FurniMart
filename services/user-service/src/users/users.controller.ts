@@ -11,14 +11,14 @@ import {
   Query,
   ForbiddenException,
 } from "@nestjs/common";
-import { Role } from "@shared/config/rbac-matrix";
+import { Role } from '../common/config/rbac-matrix';
 import { ApiTags, ApiBearerAuth, ApiOperation } from "@nestjs/swagger";
 import { AuthGuard } from "@nestjs/passport";
 import { UsersService } from "./users.service";
-import { CurrentUser } from "@shared/common/decorators/user.decorator";
-import { Roles, Public } from "@shared/common/decorators/roles.decorator";
-import { RolesGuard } from "@shared/common/guards/roles.guard";
-import { JwtAuthGuard } from "@shared/common/guards/jwt-auth.guard";
+import { CurrentUser } from '../common/decorators/user.decorator';
+import { Roles, Public } from '../common/decorators/roles.decorator';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import {
   UpdateUserDto,
   AddAddressDto,

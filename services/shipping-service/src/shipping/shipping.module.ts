@@ -4,7 +4,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ShippingService } from './shipping.service';
 import { ShippingController } from './shipping.controller';
 import { ShippingTracking, ShippingTrackingSchema } from './schemas/shipping.schema';
-import { AuthModule } from '@shared/common/auth/auth.module';
+import { AuthModule } from '../common/auth/auth.module';
 
 @Module({
   imports: [

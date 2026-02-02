@@ -1,10 +1,10 @@
 import { Controller, Get, Post, Put, Param, Body, Query, UseGuards, Request, BadRequestException } from '@nestjs/common';
-import { Role } from '@shared/config/rbac-matrix';
+import { Role } from '../common/config/rbac-matrix';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
-import { Roles } from '@shared/common/decorators/roles.decorator';
-import { RolesGuard } from '@shared/common/guards/roles.guard';
-import { CurrentUser } from '@shared/common/decorators/user.decorator';
+import { Roles } from '../common/decorators/roles.decorator';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { CurrentUser } from '../common/decorators/user.decorator';
 import { WarehouseService } from './warehouse.service';
 import { CreateWarehouseDto, WarehouseTransactionDto, AdjustStockDto } from './dtos/warehouse.dto';
 
