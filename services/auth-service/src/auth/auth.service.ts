@@ -1,19 +1,22 @@
 import { Injectable, BadRequestException, UnauthorizedException, NotFoundException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { HttpService } from '@nestjs/axios';
+import { firstValueFrom } from 'rxjs';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import { UserService } from '../user/user.service';
-import { EmailService } from '../email/email.service';
 import { LoginDto, RegisterDto, ForgotPasswordDto, ResetPasswordDto } from './dtos/auth.dto';
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
+  private readonly EMAIL_SERVICE_URL = process.env.EMAIL_SERVICE_URL || 'http://email-service:3020';
+
   constructor(
     private userService: UserService,
     private jwtService: JwtService,
-    private emailService: EmailService,
+    private httpService: HttpService,
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -119,21 +122,34 @@ export class AuthService {
       resetTokenExpiry,
     });
 
-    // Send email
+    // Send email via email-service
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     const resetUrl = `${frontendUrl}/auth/reset-password?token=${resetToken}`;
 
     try {
-      await this.emailService.sendPasswordResetEmail(user.email, resetToken, resetUrl);
+      const emailServiceUrl = `${this.EMAIL_SERVICE_URL}/api/email/password-reset`;
+      const internalSecret = process.env.INTERNAL_SERVICE_SECRET || 'furnimart-internal-secret-2024';
+      
+      await firstValueFrom(
+        this.httpService.post(
+          emailServiceUrl,
+          {
+            to: user.email,
+            resetToken,
+            resetUrl,
+          },
+          {
+            headers: {
+              'x-internal-secret': internalSecret,
+            },
+          },
+        ),
+      );
       this.logger.log(`Password reset email sent successfully to ${user.email}`);
     } catch (error) {
       // Log error but don't reveal to user
       this.logger.error(`Failed to send password reset email to ${user.email}:`, error);
       this.logger.error('Error details:', error instanceof Error ? error.message : String(error));
-      // Check if it's a configuration issue
-      if (error instanceof Error && error.message.includes('not configured')) {
-        this.logger.error('Email service is not configured. Please check GMAIL_USER and GMAIL_APP_PASSWORD environment variables.');
-      }
     }
 
     return { message: 'Nếu email tồn tại, chúng tôi đã gửi liên kết đặt lại mật khẩu.' };

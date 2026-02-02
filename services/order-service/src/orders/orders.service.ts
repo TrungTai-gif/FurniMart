@@ -6,7 +6,6 @@ import { firstValueFrom } from 'rxjs';
 import { Order, OrderDocument, OrderItem } from './schemas/order.schema';
 import { CreateOrderDto, UpdateOrderStatusDto } from './dtos/order.dto';
 import { AuditLogService } from './audit-log.service';
-import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class OrdersService {
@@ -17,12 +16,12 @@ export class OrdersService {
   private readonly PRODUCT_SERVICE_URL = process.env.PRODUCT_SERVICE_URL || 'http://product-service:3004';
   private readonly PROMOTION_SERVICE_URL = process.env.PROMOTION_SERVICE_URL || 'http://promotion-service:3010';
   private readonly ROUTING_SERVICE_URL = process.env.ROUTING_SERVICE_URL || 'https://router.project-osrm.org/route/v1/driving';
+  private readonly EMAIL_SERVICE_URL = process.env.EMAIL_SERVICE_URL || 'http://email-service:3020';
 
   constructor(
     @InjectModel(Order.name) private orderModel: Model<OrderDocument>,
     private httpService: HttpService,
     private auditLogService: AuditLogService,
-    private emailService: EmailService,
   ) {}
 
   async create(customerId: string, createOrderDto: CreateOrderDto): Promise<OrderDocument> {
@@ -423,12 +422,25 @@ export class OrdersService {
           price: item.price * item.quantity,
         }));
         
-        await this.emailService.sendOrderConfirmationEmail(
-          user.email,
-          order._id.toString(),
-          orderItems,
-          finalTotalPrice,
-          createOrderDto.shippingAddress,
+        const emailServiceUrl = `${this.EMAIL_SERVICE_URL}/api/email/order-confirmation`;
+        const internalSecret = process.env.INTERNAL_SERVICE_SECRET || 'furnimart-internal-secret-2024';
+        
+        await firstValueFrom(
+          this.httpService.post(
+            emailServiceUrl,
+            {
+              to: user.email,
+              orderId: order._id.toString(),
+              orderItems,
+              totalPrice: finalTotalPrice,
+              shippingAddress: createOrderDto.shippingAddress,
+            },
+            {
+              headers: {
+                'x-internal-secret': internalSecret,
+              },
+            },
+          ),
         );
         this.logger.log(`✅ Order confirmation email sent successfully to ${user.email} for order ${order._id.toString()}`);
       } else {
@@ -872,10 +884,23 @@ export class OrdersService {
           const user = userResponse.data?.data || userResponse.data;
           
           if (user?.email) {
-            await this.emailService.sendOrderStatusUpdateEmail(
-              user.email,
-              id,
-              normalizedStatus,
+            const emailServiceUrl = `${this.EMAIL_SERVICE_URL}/api/email/order-status-update`;
+            const internalSecret = process.env.INTERNAL_SERVICE_SECRET || 'furnimart-internal-secret-2024';
+            
+            await firstValueFrom(
+              this.httpService.post(
+                emailServiceUrl,
+                {
+                  to: user.email,
+                  orderId: id,
+                  status: normalizedStatus,
+                },
+                {
+                  headers: {
+                    'x-internal-secret': internalSecret,
+                  },
+                },
+              ),
             );
             this.logger.log(`✅ Order status update email sent successfully to ${user.email} for order ${id}`);
           } else {

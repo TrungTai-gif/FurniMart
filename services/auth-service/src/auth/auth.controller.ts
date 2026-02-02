@@ -3,8 +3,8 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto, ForgotPasswordDto, ResetPasswordDto } from './dtos/auth.dto';
-import { CurrentUser } from '@shared/common/decorators/user.decorator';
-import { Public } from '@shared/common/decorators/roles.decorator';
+import { CurrentUser } from '../common/decorators/user.decorator';
+import { Public } from '../common/decorators/roles.decorator';
 
 @ApiTags('Auth')
 @Controller('auth')
