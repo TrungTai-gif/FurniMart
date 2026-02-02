@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { orderService } from "@/services/orderService";
 import { disputeService } from "@/services/disputeService";
+import { reviewService } from "@/services/reviewService";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import Textarea from "@/components/ui/Textarea";
@@ -25,16 +26,13 @@ import OrderStatusBadge from "@/components/order/OrderStatusBadge";
 import { routes } from "@/lib/config/routes";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { disputeSchema } from "@/lib/validation";
-import { FiAlertCircle } from "react-icons/fi";
+import { disputeSchema, reviewSchema } from "@/lib/validation";
+import { FiAlertCircle, FiStar } from "react-icons/fi";
 import type { AxiosError } from "axios";
+import type { z } from "zod";
+import { useAuthStore } from "@/store/authStore";
 
-type DisputeForm = {
-  orderId: string;
-  type: "quality" | "damage" | "missing" | "wrong_item" | "delivery" | "payment" | "other" | "return" | "warranty" | "assembly";
-  reason: string;
-  description: string;
-};
+type DisputeForm = z.infer<typeof disputeSchema>;
 
 const statusColors: Record<string, "default" | "success" | "warning" | "danger" | "info"> = {
   pending: "warning",
@@ -60,9 +58,12 @@ export default function OrderDetailPage() {
   const params = useParams();
   const orderId = params.id as string;
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [disputeModalOpen, setDisputeModalOpen] = useState(false);
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [selectedProductForReview, setSelectedProductForReview] = useState<{ productId: string; productName: string } | null>(null);
 
   const { data: order, isLoading, isError, refetch } = useQuery({
     queryKey: ["order", orderId],
@@ -75,6 +76,49 @@ export default function OrderDetailPage() {
     queryFn: () => disputeService.getByOrderId(orderId),
     enabled: !!orderId,
   });
+
+  // Get unreviewed products from this order
+  const orderStatusUpper = order?.status?.toUpperCase();
+  const canReview = orderStatusUpper === "DELIVERED" || orderStatusUpper === "COMPLETED";
+  
+  const { data: unreviewedProducts, isLoading: isLoadingUnreviewed, error: unreviewedError, refetch: refetchUnreviewed } = useQuery({
+    queryKey: ["reviews", "unreviewed", orderId],
+    queryFn: () => reviewService.getUnreviewedProductsFromOrder(orderId),
+    enabled: !!orderId && !!canReview,
+    retry: 1,
+  });
+
+  // Handle error separately using useEffect
+  useEffect(() => {
+    if (unreviewedError) {
+      console.error("Error fetching unreviewed products:", unreviewedError);
+    }
+  }, [unreviewedError]);
+
+  // Create a Set of unreviewed product IDs
+  // Normalize all productIds to strings for consistent comparison
+  // If query is still loading, unreviewedProductIds will be empty Set (show all as reviewable)
+  // If query is done and productId is NOT in the set, it means it's already reviewed
+  const unreviewedProductIds = new Set<string>(
+    unreviewedProducts
+      ?.map(p => {
+        const pid = String(p.productId?.toString() || p.productId || "");
+        return pid && pid !== "undefined" && pid !== "null" ? pid : null;
+      })
+      .filter((pid): pid is string => pid !== null) || []
+  );
+
+  // Debug log and error handling
+  useEffect(() => {
+    if (order) {
+      console.log("Order status:", order.status, "canReview:", canReview);
+      console.log("Unreviewed products:", unreviewedProducts);
+      console.log("Unreviewed product IDs:", unreviewedProductIds);
+    }
+    if (unreviewedError) {
+      console.error("Error fetching unreviewed products:", unreviewedError);
+    }
+  }, [order, canReview, unreviewedProducts, unreviewedProductIds, unreviewedError]);
 
   // 2: Cancel order mutation - chỉ khi chưa PACKING
   const cancelOrderMutation = useMutation({
@@ -108,7 +152,7 @@ export default function OrderDetailPage() {
   );
 
   // Dispute form
-  const { register, handleSubmit, formState: { errors }, reset } = useForm<DisputeForm>({
+  const { register, handleSubmit, formState: { errors }, reset, watch } = useForm<DisputeForm>({
     resolver: zodResolver(disputeSchema),
     defaultValues: {
       orderId: orderId,
@@ -119,7 +163,17 @@ export default function OrderDetailPage() {
   });
 
   const createDisputeMutation = useMutation({
-    mutationFn: (data: DisputeForm) => disputeService.create(data),
+    mutationFn: (data: DisputeForm) => {
+      // Ensure reason is always provided
+      const reason = (data.reason && data.reason.trim().length >= 10) 
+        ? data.reason.trim() 
+        : data.description.trim().substring(0, 100);
+      
+      return disputeService.create({
+        ...data,
+        reason: reason,
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["dispute", "order", orderId] });
       queryClient.invalidateQueries({ queryKey: ["disputes", "my"] });
@@ -134,6 +188,80 @@ export default function OrderDetailPage() {
 
   const onSubmitDispute = (data: DisputeForm) => {
     createDisputeMutation.mutate(data);
+  };
+
+  // Review form
+  const {
+    register: registerReview,
+    handleSubmit: handleSubmitReview,
+    formState: { errors: reviewErrors },
+    reset: resetReview,
+    watch: watchReview,
+    setValue: setValueReview,
+  } = useForm({
+    resolver: zodResolver(reviewSchema),
+    defaultValues: { productId: "", rating: 5, comment: "" },
+  });
+
+  const reviewRating = watchReview("rating");
+
+  const createReviewMutation = useMutation({
+    mutationFn: (data: z.infer<typeof reviewSchema>) => {
+      // Normalize productId before sending to backend
+      const normalizedProductId = String(data.productId || '').trim();
+      if (!normalizedProductId || normalizedProductId === 'undefined' || normalizedProductId === 'null') {
+        throw new Error('Product ID không hợp lệ');
+      }
+      return reviewService.create({
+        ...data,
+        productId: normalizedProductId,
+        customerName: user?.fullName || user?.name || "Khách hàng",
+      });
+    },
+    onSuccess: async () => {
+      // Invalidate all review-related queries
+      queryClient.invalidateQueries({ queryKey: ["reviews", "unreviewed", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["reviews"] });
+      queryClient.invalidateQueries({ queryKey: ["reviews", "my"] });
+      queryClient.invalidateQueries({ queryKey: ["order", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["orders", "my"] });
+      
+      // Refetch unreviewed products to get updated list
+      await refetchUnreviewed();
+      
+      toast.success("Đánh giá sản phẩm thành công");
+      setReviewModalOpen(false);
+      setSelectedProductForReview(null);
+      resetReview();
+    },
+    onError: async (error: Error & { response?: { data?: { message?: string } } }) => {
+      const errorMessage = error?.response?.data?.message || "Không thể tạo đánh giá";
+      if (errorMessage.includes("đã đánh giá") || errorMessage.includes("chỉ được đánh giá 1 lần")) {
+        toast.error("Bạn đã đánh giá sản phẩm này rồi. Mỗi sản phẩm chỉ được đánh giá 1 lần.");
+        // Refresh unreviewed products to update UI
+        await queryClient.invalidateQueries({ queryKey: ["reviews", "unreviewed", orderId] });
+        await refetchUnreviewed();
+        setReviewModalOpen(false);
+        setSelectedProductForReview(null);
+        resetReview();
+      } else {
+        toast.error(errorMessage);
+      }
+    },
+  });
+
+  const handleReviewClick = (productId: string, productName: string) => {
+    // Normalize productId to string to ensure consistency
+    const normalizedProductId = String(productId || '').trim();
+    if (!normalizedProductId || normalizedProductId === 'undefined' || normalizedProductId === 'null') {
+      console.error('Invalid productId:', productId);
+      return;
+    }
+    setSelectedProductForReview({ productId: normalizedProductId, productName });
+    setValueReview("productId", normalizedProductId);
+    setValueReview("rating", 5);
+    setValueReview("comment", "");
+    setReviewModalOpen(true);
   };
 
   useEffect(() => {
@@ -160,11 +288,11 @@ export default function OrderDetailPage() {
   return (
     <PageShell>
       <PageHeader
-        title={`Đơn hàng #${order?.id.slice(0, 8) || "..."}`}
+        title={`Đơn hàng #${order?.id.slice(-8).toUpperCase() || "..."}`}
         breadcrumbs={[
           { label: "Trang chủ", href: routes.home },
           { label: "Đơn hàng", href: routes.customer.orders },
-          { label: `#${order?.id.slice(0, 8) || "..."}` },
+          { label: `#${order?.id.slice(-8).toUpperCase() || "..."}` },
         ]}
         actions={order && <OrderStatusBadge status={order.status} />}
       />
@@ -211,6 +339,10 @@ export default function OrderDetailPage() {
                       orderId={order.id || orderId}
                       orderStatus={order.status}
                       canEdit={canCancel} // Can edit if can cancel (PENDING or CONFIRMED)
+                      onReviewClick={handleReviewClick}
+                      unreviewedProductIds={unreviewedProductIds}
+                      isLoadingUnreviewed={isLoadingUnreviewed}
+                      unreviewedProductsData={unreviewedProducts}
                     />
                     <div className="border-t mt-4 pt-4">
                       <div className="flex justify-between font-bold text-lg">
@@ -458,9 +590,19 @@ export default function OrderDetailPage() {
             <Textarea
               {...register("description")}
               error={errors.description?.message}
-              placeholder="Mô tả chi tiết vấn đề, tình huống cụ thể..."
+              placeholder="Mô tả chi tiết vấn đề, tình huống cụ thể... (tối đa 100 ký tự)"
               rows={5}
+              maxLength={100}
             />
+            <div className="flex justify-end mt-1">
+              <p className="text-xs text-secondary-500">
+                {(() => {
+                  const text = watch("description") || "";
+                  const charCount = text.length;
+                  return `${charCount}/100 ký tự`;
+                })()}
+              </p>
+            </div>
           </div>
 
           <div className="flex gap-2 pt-4">
@@ -483,6 +625,80 @@ export default function OrderDetailPage() {
               Hủy
             </Button>
           </div>
+        </form>
+      </Modal>
+
+      {/* Review Modal */}
+      <Modal
+        isOpen={reviewModalOpen}
+        onClose={() => {
+          setReviewModalOpen(false);
+          setSelectedProductForReview(null);
+          resetReview();
+        }}
+        title={`Đánh giá ${selectedProductForReview?.productName || "sản phẩm"}`}
+      >
+        <form
+          onSubmit={handleSubmitReview((data) => createReviewMutation.mutate(data))}
+          className="space-y-6"
+        >
+          <input type="hidden" {...registerReview("productId")} />
+
+          <div className="text-center">
+            <p className="text-sm text-secondary-500 mb-3">
+              Bạn cảm thấy sản phẩm thế nào?
+            </p>
+            <div className="flex gap-2 justify-center">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setValueReview("rating", star)}
+                  className="text-4xl transition-all transform hover:scale-110 duration-200"
+                >
+                  <FiStar
+                    className={
+                      star <= reviewRating
+                        ? "fill-yellow-400 text-yellow-400"
+                        : "text-secondary-200"
+                    }
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <Textarea
+              {...registerReview("comment")}
+              placeholder="Hãy chia sẻ những điều bạn thích về sản phẩm này... (tối đa 100 ký tự)"
+              rows={4}
+              className="resize-none"
+              maxLength={100}
+            />
+            <div className="flex justify-between items-center mt-1">
+              <div>
+                {reviewErrors.comment && (
+                  <p className="text-sm text-red-600">{reviewErrors.comment.message}</p>
+                )}
+              </div>
+              <p className="text-xs text-secondary-500">
+                {(() => {
+                  const text = watchReview("comment") || "";
+                  const charCount = text.length;
+                  return `${charCount}/100 ký tự`;
+                })()}
+              </p>
+            </div>
+          </div>
+          <Button
+            type="submit"
+            variant="primary"
+            className="w-full text-base py-3"
+            isLoading={createReviewMutation.isPending}
+          >
+            Gửi đánh giá
+          </Button>
         </form>
       </Modal>
     </PageShell>
