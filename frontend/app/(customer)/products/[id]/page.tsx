@@ -146,10 +146,15 @@ export default function ProductDetailPage() {
     );
   });
 
+  // Check if current user has already reviewed this product
+  // Check if current user has already reviewed this product
+  // Normalize IDs for consistent comparison
   const hasReviewed = reviews?.some(
-    (review: Review) =>
-      (review.customerId?.toString() || review.customerId) ===
-      (user?.id?.toString() || user?.id)
+    (review: Review) => {
+      const reviewCustomerId = String(review.customerId?.toString() || review.customerId || review.userId?.toString() || review.userId || '').trim();
+      const currentUserId = String(user?.id?.toString() || user?.id || '').trim();
+      return reviewCustomerId && currentUserId && reviewCustomerId === currentUserId;
+    }
   );
   const canReview = isAuthenticated && hasPurchasedProduct && !hasReviewed;
 
@@ -162,25 +167,50 @@ export default function ProductDetailPage() {
     setValue,
   } = useForm({
     resolver: zodResolver(reviewSchema),
-    defaultValues: { productId: productId, rating: 5, comment: "" },
+    defaultValues: { 
+      productId: String(productId || '').trim(), 
+      rating: 5, 
+      comment: "" 
+    },
   });
 
   const rating = watch("rating");
 
   const createReviewMutation = useMutation({
-    mutationFn: (data: z.infer<typeof reviewSchema>) =>
-      reviewService.create({
+    mutationFn: (data: z.infer<typeof reviewSchema>) => {
+      // Normalize productId before sending to backend
+      const normalizedProductId = String(data.productId || '').trim();
+      if (!normalizedProductId || normalizedProductId === 'undefined' || normalizedProductId === 'null') {
+        throw new Error('Product ID không hợp lệ');
+      }
+      return reviewService.create({
         ...data,
+        productId: normalizedProductId,
         customerName: user?.fullName || user?.name || "Khách hàng",
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["reviews", productId] });
+      });
+    },
+    onSuccess: async () => {
+      // Invalidate all review-related queries to ensure UI updates
+      await queryClient.invalidateQueries({ queryKey: ["reviews", productId] });
+      await queryClient.invalidateQueries({ queryKey: ["reviews", "my"] });
+      await queryClient.invalidateQueries({ queryKey: ["product", productId] }); // Update product rating
+      // Refetch reviews immediately to update hasReviewed check
+      await queryClient.refetchQueries({ queryKey: ["reviews", productId] });
       toast.success("Đánh giá sản phẩm thành công");
       setReviewModalOpen(false);
       reset();
     },
-    onError: (error: Error & { response?: { data?: { message?: string } } }) =>
-      toast.error(error?.response?.data?.message || "Không thể tạo đánh giá"),
+    onError: async (error: Error & { response?: { data?: { message?: string } } }) => {
+      const errorMessage = error?.response?.data?.message || "Không thể tạo đánh giá";
+      if (errorMessage.includes("đã đánh giá") || errorMessage.includes("chỉ được đánh giá 1 lần")) {
+        toast.error("Bạn đã đánh giá sản phẩm này rồi. Mỗi sản phẩm chỉ được đánh giá 1 lần.");
+        // Refresh reviews to update UI
+        await queryClient.invalidateQueries({ queryKey: ["reviews", productId] });
+        await queryClient.refetchQueries({ queryKey: ["reviews", productId] });
+      } else {
+        toast.error(errorMessage);
+      }
+    },
   });
 
   const handleAddToCart = async () => {
@@ -729,49 +759,196 @@ export default function ProductDetailPage() {
             {(activeTab) => (
               <div className="py-8 bg-white p-8 rounded-2xl shadow-sm border border-secondary-100 min-h-100">
                 {activeTab === "desc" && (
-                  <div className="prose prose-stone max-w-none text-secondary-600 leading-relaxed marker:text-primary-500">
-                    <p>{product.description}</p>
-                    {/* Placeholder for richer content later */}
-                    <p className="text-secondary-400 italic mt-4 text-sm">
-                      * Màu sắc thực tế có thể chênh lệch nhẹ do ánh sáng chụp
-                      ảnh.
-                    </p>
+                  <div className="space-y-6">
+                    <div className="prose prose-stone max-w-none text-secondary-700 leading-relaxed">
+                      {product.description.split('\n\n').map((paragraph, idx) => {
+                        // Xử lý markdown đơn giản
+                        if (paragraph.startsWith('**') && paragraph.includes('**')) {
+                          const parts = paragraph.split('**');
+                          return (
+                            <div key={idx} className="mb-4">
+                              {parts.map((part, partIdx) => {
+                                if (partIdx % 2 === 1) {
+                                  return <strong key={partIdx} className="text-secondary-900 font-bold">{part}</strong>;
+                                }
+                                return <span key={partIdx}>{part}</span>;
+                              })}
+                            </div>
+                          );
+                        }
+                        if (paragraph.startsWith('- ')) {
+                          return (
+                            <ul key={idx} className="list-disc list-inside space-y-2 mb-4 ml-4">
+                              {paragraph.split('\n').filter(p => p.trim().startsWith('- ')).map((item, itemIdx) => (
+                                <li key={itemIdx} className="text-secondary-700">{item.replace(/^-\s*/, '')}</li>
+                              ))}
+                            </ul>
+                          );
+                        }
+                        return (
+                          <p key={idx} className="mb-4 text-secondary-700 leading-7">
+                            {paragraph}
+                          </p>
+                        );
+                      })}
+                    </div>
+                    <div className="bg-secondary-50 p-4 rounded-lg border border-secondary-100">
+                      <p className="text-secondary-500 italic text-sm flex items-center gap-2">
+                        <FiShield className="w-4 h-4" />
+                        Màu sắc thực tế có thể chênh lệch nhẹ do ánh sáng chụp ảnh và màn hình hiển thị.
+                      </p>
+                    </div>
                   </div>
                 )}
                 {activeTab === "specs" && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
-                    {product.material && (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
+                      {(product.materials && product.materials.length > 0) || product.material ? (
+                        <div className="flex justify-between py-3 border-b border-secondary-100">
+                          <span className="text-secondary-500 font-medium">Chất liệu</span>
+                          <span className="font-semibold text-secondary-900 text-right">
+                            {product.materials && product.materials.length > 0
+                              ? product.materials.join(', ')
+                              : product.material || 'N/A'}
+                          </span>
+                        </div>
+                      ) : null}
+                      
+                      {(product.colors && product.colors.length > 0) ? (
+                        <div className="flex justify-between py-3 border-b border-secondary-100">
+                          <span className="text-secondary-500 font-medium">Màu sắc</span>
+                          <div className="flex gap-2 items-center">
+                            {product.colors.map((color, idx) => (
+                              <span
+                                key={idx}
+                                className="px-3 py-1 bg-secondary-100 rounded-full text-sm font-medium text-secondary-900"
+                              >
+                                {color}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+                      
+                      {product.dimensions && (
+                        <div className="flex justify-between py-3 border-b border-secondary-100">
+                          <span className="text-secondary-500 font-medium">Kích thước</span>
+                          <span className="font-semibold text-secondary-900 text-right">
+                            {typeof product.dimensions === "string"
+                              ? product.dimensions
+                              : `${product.dimensions.length || 0} x ${
+                                  product.dimensions.width || 0
+                                } x ${product.dimensions.height || 0} ${
+                                  product.dimensions.unit || "cm"
+                                }${product.dimensions.weight ? ` (${product.dimensions.weight}kg)` : ''}`}
+                          </span>
+                        </div>
+                      )}
+                      
                       <div className="flex justify-between py-3 border-b border-secondary-100">
-                        <span className="text-secondary-500">Chất liệu</span>
-                        <span className="font-medium text-secondary-900">
-                          {product.material}
+                        <span className="text-secondary-500 font-medium">Thương hiệu</span>
+                        <span className="font-semibold text-secondary-900">
+                          FurniMart
                         </span>
                       </div>
-                    )}
-                    {product.dimensions && (
+                      
                       <div className="flex justify-between py-3 border-b border-secondary-100">
-                        <span className="text-secondary-500">Kích thước</span>
-                        <span className="font-medium text-secondary-900">
-                          {typeof product.dimensions === "string"
-                            ? product.dimensions
-                            : `${product.dimensions.length || 0}x${
-                                product.dimensions.width || 0
-                              }x${product.dimensions.height || 0} ${
-                                product.dimensions.unit || "cm"
-                              }`}
+                        <span className="text-secondary-500 font-medium">Đánh giá</span>
+                        <div className="flex items-center gap-2">
+                          <div className="flex text-accent-500">
+                            {[...Array(5)].map((_, i) => (
+                              <FiStar
+                                key={i}
+                                className={cn(
+                                  "w-4 h-4",
+                                  i < Math.floor(product.rating || 0) && "fill-current"
+                                )}
+                              />
+                            ))}
+                          </div>
+                          <span className="font-semibold text-secondary-900">
+                            {product.rating?.toFixed(1) || '0.0'} ({product.reviewCount || 0} đánh giá)
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex justify-between py-3 border-b border-secondary-100">
+                        <span className="text-secondary-500 font-medium">Tình trạng</span>
+                        <span className={cn(
+                          "font-semibold px-3 py-1 rounded-full text-sm",
+                          product.isActive !== false
+                            ? "bg-emerald-100 text-emerald-700"
+                            : "bg-red-100 text-red-700"
+                        )}>
+                          {product.isActive !== false ? 'Còn hàng' : 'Hết hàng'}
                         </span>
                       </div>
-                    )}
-                    <div className="flex justify-between py-3 border-b border-secondary-100">
-                      <span className="text-secondary-500">Thương hiệu</span>
-                      <span className="font-medium text-secondary-900">
-                        FurniMart
-                      </span>
+                    </div>
+                    
+                    <div className="mt-6 p-4 bg-primary-50 rounded-lg border border-primary-100">
+                      <h4 className="font-bold text-primary-900 mb-2 flex items-center gap-2">
+                        <FiShield className="w-5 h-5" />
+                        Chính sách bảo hành
+                      </h4>
+                      <ul className="space-y-1 text-sm text-primary-700">
+                        <li>• Bảo hành chính hãng từ 1-5 năm tùy sản phẩm</li>
+                        <li>• Hỗ trợ sửa chữa, thay thế linh kiện</li>
+                        <li>• Dịch vụ chăm sóc khách hàng 24/7</li>
+                      </ul>
                     </div>
                   </div>
                 )}
                 {activeTab === "reviews" && (
                   <div className="space-y-8">
+                    {/* Rating Summary */}
+                    {reviews && reviews.length > 0 && (
+                      <div className="bg-gradient-to-br from-primary-50 to-secondary-50 p-6 rounded-xl border border-primary-100">
+                        <div className="flex items-center gap-6 mb-4">
+                          <div className="text-center">
+                            <div className="text-5xl font-bold text-primary-600 mb-1">
+                              {product.rating?.toFixed(1) || '0.0'}
+                            </div>
+                            <div className="flex text-accent-500 justify-center mb-2">
+                              {[...Array(5)].map((_, i) => (
+                                <FiStar
+                                  key={i}
+                                  className={cn(
+                                    "w-5 h-5",
+                                    i < Math.floor(product.rating || 0) && "fill-current"
+                                  )}
+                                />
+                              ))}
+                            </div>
+                            <div className="text-sm text-secondary-600">
+                              {product.reviewCount || 0} đánh giá
+                            </div>
+                          </div>
+                          <div className="flex-1 space-y-2">
+                            {[5, 4, 3, 2, 1].map((star) => {
+                              const count = reviews.filter(r => r.rating === star).length;
+                              const percentage = reviews.length > 0 ? (count / reviews.length) * 100 : 0;
+                              return (
+                                <div key={star} className="flex items-center gap-3">
+                                  <span className="text-sm font-medium text-secondary-700 w-8">
+                                    {star} sao
+                                  </span>
+                                  <div className="flex-1 h-2 bg-secondary-200 rounded-full overflow-hidden">
+                                    <div
+                                      className="h-full bg-accent-500 transition-all"
+                                      style={{ width: `${percentage}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-sm text-secondary-600 w-8 text-right">
+                                    {count}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {canReview && (
                       <div className="bg-primary-50 p-6 rounded-xl flex items-center justify-between border border-primary-100">
                         <div>
@@ -804,35 +981,68 @@ export default function ProductDetailPage() {
                     {reviews?.map((review: Review) => (
                       <div
                         key={review.id}
-                        className="border-b border-secondary-100 pb-8 last:border-0 last:pb-0"
+                        className="border border-secondary-200 rounded-xl p-6 bg-white hover:shadow-md transition-shadow"
                       >
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-10 h-10 rounded-full bg-secondary-100 flex items-center justify-center font-bold text-secondary-500 text-sm">
-                            {(review.customerName || "K").charAt(0)}
+                        <div className="flex items-start gap-4 mb-4">
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center font-bold text-white text-lg shadow-md">
+                            {(review.customerName || "K").charAt(0).toUpperCase()}
                           </div>
-                          <div>
-                            <div className="font-bold text-secondary-900 text-sm">
-                              {review.customerName || "Khách hàng"}
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-2">
+                              <div>
+                                <div className="font-bold text-secondary-900 text-base mb-1">
+                                  {review.customerName || "Khách hàng"}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <div className="flex text-accent-500">
+                                    {[...Array(5)].map((_, i) => (
+                                      <FiStar
+                                        key={i}
+                                        className={cn(
+                                          "w-4 h-4",
+                                          i < review.rating && "fill-current"
+                                        )}
+                                      />
+                                    ))}
+                                  </div>
+                                  <span className="text-sm text-secondary-500">
+                                    {review.rating}/5
+                                  </span>
+                                </div>
+                              </div>
+                              {review.isVerified && (
+                                <span className="flex items-center gap-1 text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-200">
+                                  <FiCheck className="w-3 h-3" />
+                                  Đã mua hàng
+                                </span>
+                              )}
                             </div>
-                            <div className="flex text-accent-500 text-xs mt-0.5">
-                              {[...Array(5)].map((_, i) => (
-                                <FiStar
-                                  key={i}
-                                  className={cn(
-                                    "w-3 h-3",
-                                    i < review.rating && "fill-current"
-                                  )}
-                                />
-                              ))}
-                            </div>
+                            {review.createdAt && (
+                              <span className="text-xs text-secondary-400">
+                                {new Date(review.createdAt).toLocaleDateString('vi-VN', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric'
+                                })}
+                              </span>
+                            )}
                           </div>
-                          <span className="text-xs text-secondary-400 ml-auto">
-                            Đã mua hàng
-                          </span>
                         </div>
-                        <p className="text-secondary-600 leading-relaxed mt-3 pl-12 text-sm">
+                        <p className="text-secondary-700 leading-relaxed text-base pl-16">
                           {review.comment}
                         </p>
+                        {review.images && review.images.length > 0 && (
+                          <div className="flex gap-2 mt-4 pl-16">
+                            {review.images.map((img, idx) => (
+                              <img
+                                key={idx}
+                                src={img}
+                                alt={`Review image ${idx + 1}`}
+                                className="w-20 h-20 object-cover rounded-lg border border-secondary-200"
+                              />
+                            ))}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -864,13 +1074,13 @@ export default function ProductDetailPage() {
                   key={star}
                   type="button"
                   onClick={() => setValue("rating", star)}
-                  className="text-4xl text-secondary-200 hover:text-accent-400 focus:text-accent-500 transition-colors transform hover:scale-110 duration-200"
+                  className="text-4xl transition-all transform hover:scale-110 duration-200"
                 >
                   <FiStar
                     className={
                       star <= rating
-                        ? "fill-accent-500 text-accent-500 shadow-glow"
-                        : ""
+                        ? "fill-yellow-400 text-yellow-400"
+                        : "text-secondary-200"
                     }
                   />
                 </button>
@@ -878,12 +1088,24 @@ export default function ProductDetailPage() {
             </div>
           </div>
 
-          <Textarea
-            {...register("comment")}
-            placeholder="Hãy chia sẻ những điều bạn thích về sản phẩm này..."
-            rows={4}
-            className="resize-none"
-          />
+          <div>
+            <Textarea
+              {...register("comment")}
+              placeholder="Hãy chia sẻ những điều bạn thích về sản phẩm này... (tối đa 100 ký tự)"
+              rows={4}
+              className="resize-none"
+              maxLength={100}
+            />
+            <div className="flex justify-end mt-1">
+              <p className="text-xs text-secondary-500">
+                {(() => {
+                  const text = watch("comment") || "";
+                  const charCount = text.length;
+                  return `${charCount}/100 ký tự`;
+                })()}
+              </p>
+            </div>
+          </div>
           <Button
             type="submit"
             variant="primary"
