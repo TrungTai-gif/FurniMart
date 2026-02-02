@@ -3,8 +3,8 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { WarehouseController } from './warehouse.controller';
 import { WarehouseService } from './warehouse.service';
 import { Warehouse, WarehouseSchema } from './schemas/warehouse.schema';
-import { RolesGuard } from '@shared/common/guards/roles.guard';
-import { AuthModule } from '@shared/common/auth/auth.module';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { AuthModule } from '../common/auth/auth.module';
 
 @Module({
   imports: [

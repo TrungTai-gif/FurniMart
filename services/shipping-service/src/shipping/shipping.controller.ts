@@ -1,12 +1,12 @@
 import { Controller, Get, Put, Param, Body, UseGuards } from '@nestjs/common';
-import { Role } from '@shared/config/rbac-matrix';
+import { Role } from '../common/config/rbac-matrix';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { ShippingService } from './shipping.service';
 import { UpdateShippingDto } from './dtos/shipping.dto';
-import { CurrentUser } from '@shared/common/decorators/user.decorator';
-import { Roles } from '@shared/common/decorators/roles.decorator';
-import { RolesGuard } from '@shared/common/guards/roles.guard';
+import { CurrentUser } from '../common/decorators/user.decorator';
+import { Roles } from '../common/decorators/roles.decorator';
+import { RolesGuard } from '../common/guards/roles.guard';
 
 @ApiTags('Shipping')
 @ApiBearerAuth()

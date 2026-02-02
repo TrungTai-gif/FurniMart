@@ -1,13 +1,13 @@
 import { Controller, Get, Post, Put, Param, Body, Query, UseGuards, Req, Res } from '@nestjs/common';
-import { Role } from '@shared/config/rbac-matrix';
+import { Role } from '../common/config/rbac-matrix';
 import { Request } from 'express';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { WalletService } from './wallet.service';
 import { CreateWalletDto, DepositDto, WithdrawDto, EscrowLockDto, EscrowReleaseDto, EscrowRefundDto, TransferDto, UpdateTransactionStatusDto } from './dtos/wallet.dto';
-import { CurrentUser } from '@shared/common/decorators/user.decorator';
-import { Roles } from '@shared/common/decorators/roles.decorator';
-import { RolesGuard } from '@shared/common/guards/roles.guard';
+import { CurrentUser } from '../common/decorators/user.decorator';
+import { Roles } from '../common/decorators/roles.decorator';
+import { RolesGuard } from '../common/guards/roles.guard';
 import { WalletTransactionDocument } from './schemas/wallet.schema';
 
 @ApiTags('Wallet')

@@ -21,9 +21,9 @@ import {
   ApiBody,
 } from "@nestjs/swagger";
 import { AuthGuard } from "@nestjs/passport";
-import { Roles } from "@shared/common/decorators/roles.decorator";
-import { RolesGuard } from "@shared/common/guards/roles.guard";
-import { Role } from "@shared/config/rbac-matrix";
+import { Roles } from '../common/decorators/roles.decorator';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Role } from '../common/config/rbac-matrix';
 import { ValidationPipe } from "@nestjs/common";
 import { diskStorage } from "multer";
 import { extname, join } from "path";
