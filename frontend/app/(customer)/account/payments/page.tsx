@@ -114,7 +114,7 @@ export default function PaymentsPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-3">
                         <Link href={routes.customer.orderDetail(payment.orderId)} className="text-primary-600 hover:text-primary-700 font-medium">
-                          Đơn hàng #{payment.orderId.slice(-8)}
+                          Đơn hàng #{payment.orderId.slice(-8).toUpperCase()}
                         </Link>
                         {getStatusBadge(payment.status)}
                       </div>
