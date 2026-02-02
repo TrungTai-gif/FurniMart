@@ -47,20 +47,53 @@ export default function DisputesPage() {
   });
 
   const createDisputeMutation = useMutation({
-    mutationFn: (data: DisputeForm) => disputeService.create(data),
+    mutationFn: (data: DisputeForm) => {
+      // Ensure reason is always provided
+      const reason = (data.reason && data.reason.trim().length >= 10) 
+        ? data.reason.trim() 
+        : data.description.trim().substring(0, 100);
+      
+      return disputeService.create({
+        ...data,
+        reason: reason,
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["disputes", "my"] });
       toast.success("Tạo yêu cầu hỗ trợ thành công");
       setIsModalOpen(false);
       reset();
     },
-    onError: () => {
-      toast.error("Không thể tạo yêu cầu hỗ trợ");
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.message || error?.message || "Không thể tạo yêu cầu hỗ trợ";
+      toast.error(errorMessage);
+      console.error("Create dispute error:", error);
     },
   });
 
   const onSubmit = (data: DisputeForm) => {
-    createDisputeMutation.mutate(data);
+    // Validate required fields
+    if (!data.orderId || data.orderId.trim() === "") {
+      toast.error("Vui lòng chọn đơn hàng liên quan");
+      return;
+    }
+    if (!data.type || data.type.trim() === "") {
+      toast.error("Vui lòng chọn loại yêu cầu");
+      return;
+    }
+    if (!data.description || data.description.trim().length < 20) {
+      toast.error("Mô tả chi tiết phải có ít nhất 20 ký tự");
+      return;
+    }
+    // Reason is optional in form but required in backend, use description if empty
+    const reason = (data.reason && data.reason.trim().length >= 10) 
+      ? data.reason.trim() 
+      : data.description.trim().substring(0, 100);
+    
+    createDisputeMutation.mutate({
+      ...data,
+      reason: reason,
+    });
   };
 
   const getDisputeTypeLabel = (type: string) => {
@@ -237,9 +270,19 @@ export default function DisputesPage() {
               <Textarea
                 {...register("description")}
                 error={errors.description?.message}
-                placeholder="Mô tả chi tiết vấn đề, tình huống cụ thể..."
+                placeholder="Mô tả chi tiết vấn đề, tình huống cụ thể... (tối đa 100 ký tự)"
                 rows={5}
+                maxLength={100}
               />
+              <div className="flex justify-end mt-1">
+                <p className="text-xs text-secondary-500">
+                  {(() => {
+                    const text = watch("description") || "";
+                    const charCount = text.length;
+                    return `${charCount}/100 ký tự`;
+                  })()}
+                </p>
+              </div>
             </div>
 
             <div className="flex gap-2 pt-4">
